@@ -1,0 +1,1628 @@
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Contracts\IDataSeeding.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Contracts
+{
+    public interface IDataSeeding
+    {
+        Task DataSeedAsync();
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Contracts\IGenericRepository.cs ====================
+
+using DomainLayer.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Contracts
+{
+    public interface IGenericRepository<TEntity, Tkey> where TEntity : BaseEntity<Tkey>
+    {
+        Task<TEntity?> GetByIdAsync(Tkey id);
+        Task<IEnumerable<TEntity>> GetAllAsync();
+
+        Task<IEnumerable<TEntity>> GetAllAsync(ISpecifications<TEntity, Tkey> specifications);
+        Task<TEntity?> GetByIdAsync(ISpecifications<TEntity, Tkey> specifications);
+        Task<int> CountAsync(ISpecifications<TEntity, Tkey> specifications);
+
+        Task AddAsync(TEntity entity);
+        void Delete(TEntity entity);
+        void Update(TEntity entity);
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Contracts\ISpecifications.cs ====================
+
+using DomainLayer.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Contracts
+{
+    public interface ISpecifications<TEntity, Tkey> where TEntity : BaseEntity<Tkey>
+    {
+        // property for each dynamic query that we want to build
+
+        // where clause
+        public Expression<Func<TEntity, bool>> Criteria { get; }
+
+        // include clause
+        public List<Expression<Func<TEntity, object>>> IncludeExpressions { get; }
+        public Expression<Func<TEntity, object>> OrderBy { get; }
+        public Expression<Func<TEntity, object>> OrderByDesc { get; }
+        public int Skip { get; }
+        public int Take { get; }
+        public bool IsPaginated { get; set; }
+
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Contracts\IUnitOfWork.cs ====================
+
+using DomainLayer.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Contracts
+{
+    public interface IUnitOfWork
+    {
+        IGenericRepository<TEntity, Tkey> GetRepository<TEntity, Tkey>() where TEntity : BaseEntity<Tkey>;
+        Task<int> SaveChangesAsync();
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\BaseEntity.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Models
+{
+    public class BaseEntity<TKey>
+    {
+        public TKey Id { get; set; }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\Product.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Models
+{
+    public class Product:BaseEntity<int>
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public string PictureUrl { get; set; }
+        public decimal Price { get; set; }
+        public ProductBrand ProductBrand { get; set; }
+        public int BrandId { get; set; }
+        public ProductType ProductType { get; set; }
+        public int TypeId { get; set; }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\ProductBrand.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Models
+{
+    public class ProductBrand:BaseEntity<int>
+    {
+        public string Name { get; set; }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\ProductType.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Models
+{
+    public class ProductType:BaseEntity<int>
+    {
+        public string Name { get; set; }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\DomainLayer.csproj ====================
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Exceptions\" />
+  </ItemGroup>
+
+</Project>
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\E-Commerce2026\Properties\launchSettings.json ====================
+
+{
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:24517",
+      "sslPort": 44323
+    }
+  },
+  "profiles": {
+    "http": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "http://localhost:5068",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "https": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "https://localhost:7235;http://localhost:5068",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\E-Commerce2026\appsettings.Development.json ====================
+
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\E-Commerce2026\appsettings.json ====================
+
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+
+  "ConnectionStrings": {
+    "Default": "Server = . ; Database = ECommerce2026 ; Trusted_Connection = true ; TrustServerCertificate = true ;"
+  },
+
+  "Urls": {
+    "BaseUrl": "https://localhost:7235/"
+  }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\E-Commerce2026\E-Commerce2026.csproj ====================
+
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>E_Commerce2026</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.27">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Persistence\Persistence.csproj" />
+    <ProjectReference Include="..\Presentation\Presentation.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controllers\" />
+  </ItemGroup>
+
+</Project>
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\E-Commerce2026\Program.cs ====================
+
+using DomainLayer.Contracts;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Persistence;
+using Persistence.Data;
+using Persistence.Repositories;
+using Service;
+using Service.MappingProfiles;
+using ServiceAbstraction;
+
+namespace ECommerce.Web
+{
+    public class Program
+    {
+        public static async Task Main(string[] args)
+        {
+            var builder = WebApplication.CreateBuilder(args);
+
+            #region Add services to the container.
+
+            builder.Services.AddControllers();
+            // without it ASP.NET doesn't know that
+            // your project contain controllers
+
+            builder.Services.AddEndpointsApiExplorer();
+            // discover all API endpoints
+            // each action in the controller is
+            // considered an endpoint
+
+            builder.Services.AddSwaggerGen();
+            // convert discovered metadata [endpoints]
+            // into OpenAPI specification [JSON]
+
+            builder.Services.AddDbContext<StoreDbContext>(Options =>
+            {
+                Options.UseSqlServer(builder.Configuration.GetConnectionString("Default"));
+            });
+
+            builder.Services.AddScoped<IDataSeeding, DataSeeding>();
+
+            builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+            //builder.Services.AddAutoMapper(X => X.AddProfile(new ProductProfile()));
+
+            builder.Services.AddAutoMapper(cfg => { },
+                typeof(Service.AssemblyRef).Assembly);
+
+            builder.Services.AddScoped<IServiceManager, ServiceManager>();
+
+
+
+            #endregion
+
+            var app = builder.Build();
+
+            #region use dataseeding before running the app
+
+            using var Scope = app.Services.CreateScope();
+
+            var ObjectOfDataSeeding = Scope.ServiceProvider.GetRequiredService<IDataSeeding>();
+
+            await ObjectOfDataSeeding.DataSeedAsync();
+
+            #endregion
+
+            #region Configure the HTTP request pipeline.
+
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseSwagger();
+                // to expose the JSON [OpenAPI specification]
+                // via HTTP
+
+                app.UseSwaggerUI();
+                // used to provide interactive swagger web page
+                // reads the swagger JSON to generate UI
+            }
+
+            app.UseHttpsRedirection();
+            // forces HTTP requests to use HTTPS
+
+            app.UseStaticFiles();
+            // to serve static files like images, CSS, JavaScript
+
+            app.MapControllers();
+            // connects the http routes to the controller actions 
+
+            #endregion
+
+            app.Run();
+            // build the app , listen to requests
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Data\Configurations\ProductConfigurations.cs ====================
+
+using DomainLayer.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Persistence.Data.Configurations
+{
+    class ProductConfigurations : IEntityTypeConfiguration<Product>
+    {
+        public void Configure(EntityTypeBuilder<Product> builder)
+        {
+            builder.HasOne(P => P.ProductBrand)
+                .WithMany()
+                .HasForeignKey(P => P.BrandId);
+
+
+            builder.HasOne(P => P.ProductType)
+                .WithMany()
+                .HasForeignKey(P => P.TypeId);
+
+
+            builder.Property(P => P.Price)
+                .HasColumnType("decimal(10,2)");
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Data\DataSeed\brands.json ====================
+
+[
+  {
+    "Name": "Chicken"
+  },
+  {
+    "Name": "Seafood"
+  },
+  {
+    "Name": "Pasta and Noodles"
+  },
+  {
+    "Name": "Soup"
+  },
+  {
+    "Name": "Desserts"
+  },
+  {
+    "Name": "Vegetable"
+  }
+]
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Data\DataSeed\delivery.json ====================
+
+[
+  {
+    "Id": 1,
+    "ShortName": "UPS1",
+    "Description": "Fastest delivery time",
+    "DeliveryTime": "1-2 Days",
+    "Price": 10
+  },
+  {
+    "Id": 2,
+    "ShortName": "UPS2",
+    "Description": "Get it within 5 days",
+    "DeliveryTime": "2-5 Days",
+    "Price": 5
+  },
+  {
+    "Id": 3,
+    "ShortName": "UPS3",
+    "Description": "Slower but cheap",
+    "DeliveryTime": "5-10 Days",
+    "Price": 2
+  },
+  {
+    "Id": 4,
+    "ShortName": "FREE",
+    "Description": "Free! You get what you pay for",
+    "DeliveryTime": "1-2 Weeks",
+    "Price": 0
+  }
+]
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Data\DataSeed\products.json ====================
+
+[
+  {
+    "Name": "Italian Chicken Marinade",
+    "Description": "This Italian dressing chicken marinade is a super simple but delicious way to add flavor before grilling.",
+    "Price": 200,
+    "PictureUrl": "images/products/ItalianChickenMarinade.png",
+    "TypeId": 1,
+    "BrandId": 1
+  },
+  {
+    "Name": "Chicken Marsala",
+    "Description": "Chicken Marsala is an Italian-style recipe for tender pan-fried chicken breasts in a sweet Marsala wine and mushroom sauce. It's super quick and easy to make for a weeknight dinner AND sophisticated enough for company.",
+    "Price": 150,
+    "PictureUrl": "images/products/ChickenMarsala.png",
+    "TypeId": 1,
+    "BrandId": 1
+  },
+  {
+    "Name": "Hearty Vegetable Lasagna",
+    "Description": "This hearty, vegetable lasagna is the only lasagna my husband will eat. We love it! Hope you all enjoy it as much as we do.",
+    "Price": 180,
+    "PictureUrl": "images/products/HeartyVegetableLasagna.png",
+    "TypeId": 1,
+    "BrandId": 2
+  },
+  {
+    "Name": "Cheesy Vegetable Lasagna",
+    "Description": "A rich, cheesy lasagna loaded with vegetables. You could also omit all veggies except broccoli for a broccoli lasagna.",
+    "Price": 300,
+    "PictureUrl": "images/products/CheesyVegetableLasagna.png",
+    "TypeId": 1,
+    "BrandId": 2
+  },
+  {
+    "Name": "Pasta Salad",
+    "Description": "This pasta salad recipe was given to me by a dear friend many years ago, and I've been making it ever since! It's great for barbecues.",
+    "Price": 250,
+    "PictureUrl": "images/products/PastaSalad.png",
+    "TypeId": 1,
+    "BrandId": 4
+  },
+  {
+    "Name": "Italian Wedding Soup",
+    "Description": "This lovely Italian wedding soup recipe combines flavorful meatballs with sliced escarole, orzo pasta, and finely chopped carrot. Serve hot, garnished with fresh parsley and extra Parmesan cheese.",
+    "Price": 120,
+    "PictureUrl": "images/products/ItalianWeddingSoup.png",
+    "TypeId": 1,
+    "BrandId": 5
+  },
+  {
+    "Name": "Vegetarian Refried Beans",
+    "Description": "Traditional vegetarian and vegan refried beans that taste great with hardly any fat!",
+    "Price": 10,
+    "PictureUrl": "images/products/VegetarianRefriedBeans.png",
+    "TypeId": 2,
+    "BrandId": 2
+  },
+  {
+    "Name": "Sweet and Spicy Sausage and Pepper Pasta",
+    "Description": "This is a fabulous meal prep recipe, and the tomatoes and peppers lend a natural sweetness to juxtapose the spicy sauce and sausage.",
+    "Price": 8,
+    "PictureUrl": "images/products/PepperPasta.png",
+    "TypeId": 2,
+    "BrandId": 4
+  },
+  {
+    "Name": "Creamy Gochujang Tortellini",
+    "Description": "The popular miso pasta gets a spicy, yet savory addition of gochujang sauce. Certainly food fusion, and ultimately comfort food!",
+    "Price": 15,
+    "PictureUrl": "images/products/CreamyGochujangTortellini.png",
+    "TypeId": 2,
+    "BrandId": 4
+  },
+  {
+    "Name": "Shrimp Egg Foo Young",
+    "Description": "This egg foo young recipe includes a delicious sauce to put on top of the patties. This is a very special recipe acquired when I worked at a Chinese restaurant to pay for my red 1966 VW bug when in high school! The recipe card is tattered and spotted now, but the dish is the best egg foo young I have ever had. To serve, place egg patty over steamed rice and put the sauce on top.",
+    "Price": 18,
+    "PictureUrl": "images/products/ShrimpEggFooYoung.png",
+    "TypeId": 4,
+    "BrandId": 3
+  },
+  {
+    "Name": "Congee",
+    "Description": "Congee, a Chinese rice porridge, will make any cold winter's day warm and welcoming. This recipe, also known as 'jook', was inspired by my Grandmother's frequent preparation of this dish. You will enjoy congee's unique velvety and savory taste.",
+    "Price": 15,
+    "PictureUrl": "images/products/Congee.png",
+    "TypeId": 4,
+    "BrandId": 3
+  },
+  {
+    "Name": "Haluski - Cabbage and Noodles",
+    "Description": "This haluski recipe is made with buttery egg noodles, fried cabbage, and onions. It's a great, flavorful dish!",
+    "Price": 16,
+    "PictureUrl": "images/products/HaluskiNoodles.png",
+    "TypeId": 4,
+    "BrandId": 4
+  },
+  {
+    "Name": "Chicken Teriyaki and Noodles",
+    "Description": "Ditch the take out with this quick chicken teriyaki and noodle dish made with homemade teriyaki sauce!",
+    "Price": 14,
+    "PictureUrl": "images/products/ChickenTeriyakiNoodles.png",
+    "TypeId": 4,
+    "BrandId": 4
+  },
+  {
+    "Name": "Kulfi",
+    "Description": "This is a simple but delicious recipe for Kulfi (Indian Ice Cream) that I got from my sister-in-law. I have made this several times, and it always gets rave reviews - even the kids love it! For extra flavor, you could add a few drops of rose water or ground pistachios.",
+    "Price": 250,
+    "PictureUrl": "images/products/Kulfi.png",
+    "TypeId": 3,
+    "BrandId": 6
+  },
+  {
+    "Name": "Crispy Vegetable Pakoras",
+    "Description": "These vegetable pakoras are delicious. You'll love this recipe if you've ever had Japanese tempura-coated veggies. These pakoras are similar, but the spiced batter gives them a unique taste. Serve with chili sauce, mint yogurt sauce, or sweet and sour sauce. Try this recipe with other vegetables, such as sweet potatoes, broccoli, and asparagus.",
+    "Price": 189.99,
+    "PictureUrl": "images/products/CrispyVegetablePakoras.png",
+    "TypeId": 3,
+    "BrandId": 2
+  },
+  {
+    "Name": "Vegetarian Korma",
+    "Description": "This vegetable korma recipe is an easy vegetarian curry. It's rich, creamy, mildly spiced, and extremely flavorful. Serve with naan and rice.",
+    "Price": 199.99,
+    "PictureUrl": "images/products/VegetarianKorma.png",
+    "TypeId": 3,
+    "BrandId": 2
+  },
+  {
+    "Name": "Tandoori Chicken",
+    "Description": "Try this authentic tandoori chicken that's marinated in yogurt and spices, then cooked on the grill instead of a clay oven so you can make it at home. Serve with long-grain basmati rice, grilled veggies, roasted corn on the cob, and a cucumber salad.",
+    "Price": 150,
+    "PictureUrl": "images/products/TandooriChicken.png",
+    "TypeId": 3,
+    "BrandId": 1
+  },
+  {
+    "Name": "Indian Chicken Tikka Masala",
+    "Description": "This Indian chicken tikka masala is an easy but flavorful version of everyone's favorite mild-medium curry! Serve with naan bread and mango chutney. Garnish with additional cilantro leaves.",
+    "Price": 180,
+    "PictureUrl": "images/products/ChickenTikkaMasala.png",
+    "TypeId": 3,
+    "BrandId": 1
+  }
+]
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Data\DataSeed\types.json ====================
+
+[
+  {
+    "Name": "Italian"
+  },
+  {
+    "Name": "Mexican"
+  },
+  {
+    "Name": "Indian"
+  },
+  {
+    "Name": "Chinese"
+  }
+]
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Data\StoreDbContext.cs ====================
+
+using DomainLayer.Models;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection.Metadata;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Persistence.Data
+{
+    public class StoreDbContext: DbContext
+    {
+        public StoreDbContext(DbContextOptions<StoreDbContext> options) : base(options)
+        {
+
+        }
+        public DbSet<Product> Products { get; set; }
+        public DbSet<ProductType> ProductTypes { get; set; }
+        public DbSet<ProductBrand> ProductBrands { get; set; }
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(AssemblyReference).Assembly);
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Repositories\GenericRepository.cs ====================
+
+using DomainLayer.Contracts;
+using DomainLayer.Models;
+using Microsoft.EntityFrameworkCore;
+using Persistence.Data;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Persistence.Repositories
+{
+    public class GenericRepository<TEntity, Tkey>(StoreDbContext dbContext) : IGenericRepository<TEntity, Tkey> where TEntity : BaseEntity<Tkey>
+    {
+        public async Task AddAsync(TEntity entity)
+        {
+            await dbContext.Set<TEntity>().AddAsync(entity);
+        }
+
+        public void Delete(TEntity entity)
+        {
+            dbContext.Set<TEntity>().Remove(entity);
+        }
+
+        public async Task<IEnumerable<TEntity>> GetAllAsync()
+        {
+            return await dbContext.Set<TEntity>().ToListAsync();
+        }
+
+
+        public async Task<TEntity?> GetByIdAsync(Tkey id)
+        {
+            return await dbContext.Set<TEntity>().FindAsync(id);
+        }
+        public void Update(TEntity entity)
+        {
+            dbContext.Set<TEntity>().Update(entity);
+        }
+
+        public async Task<IEnumerable<TEntity>> GetAllAsync(ISpecifications<TEntity, Tkey> specifications)
+        {
+            
+            return await SpecificationEvaluator
+               .CreateQuery(dbContext.Set<TEntity>(), specifications)
+               .ToListAsync();
+        }
+
+        public async Task<TEntity?> GetByIdAsync(ISpecifications<TEntity, Tkey> specifications)
+        {
+            return await SpecificationEvaluator
+                .CreateQuery(dbContext.Set<TEntity>(), specifications)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<int> CountAsync(ISpecifications<TEntity, Tkey> specifications)
+        {
+            return await SpecificationEvaluator
+                .CreateQuery(dbContext.Set<TEntity>(), specifications).CountAsync();
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Repositories\UnitOfWork.cs ====================
+
+using DomainLayer.Contracts;
+using DomainLayer.Models;
+using Persistence.Data;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Persistence.Repositories
+{
+    public class UnitOfWork(StoreDbContext dbContext) : IUnitOfWork
+    {
+        // we create a dictionary which holds all repositories
+        private readonly Dictionary<string, object> _repositories = [];
+
+        // we create a method to get the repositories from the dictionary and create if does not exist
+        public IGenericRepository<TEntity, Tkey> GetRepository<TEntity, Tkey>() where TEntity : BaseEntity<Tkey>
+        {
+            //get the name of the type from the outer
+            var typeName = typeof(TEntity).Name;
+
+            //check if the name exists in the dictionary
+            if (_repositories.ContainsKey(typeName))
+            {
+                // if exists return a cast from the dictionary 
+                return (IGenericRepository<TEntity, Tkey>)_repositories[typeName];
+            }
+            else
+            {
+                // if does not exist create an object from this name 
+                var repo = new GenericRepository<TEntity, Tkey>(dbContext);
+
+                // add the object to the dictionary
+                _repositories.Add(typeName, repo);
+
+                // retrun the obj
+                return repo;
+            }
+        }
+
+        public async Task<int> SaveChangesAsync()
+        {
+            return await dbContext.SaveChangesAsync();
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\AssemblyReference.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Persistence
+{
+    public class AssemblyReference
+    {
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\DataSeeding.cs ====================
+
+using DomainLayer.Contracts;
+using DomainLayer.Models;
+using Microsoft.EntityFrameworkCore;
+using Persistence.Data;
+using System.Text.Json;
+
+namespace Persistence
+{
+    public class DataSeeding(StoreDbContext dbContext) : IDataSeeding
+    {
+        public async Task DataSeedAsync()
+        {
+            // Apply pending migrations
+            if ((await dbContext.Database.GetPendingMigrationsAsync()).Any())
+            {
+                await dbContext.Database.MigrateAsync();
+            }
+
+            try
+            {
+                #region ProductBrands
+
+                if (!dbContext.ProductBrands.Any())
+                {
+                    var productsBrandData =
+                        File.OpenRead(@"..\Persistence\Data\DataSeed\brands.json");
+
+                    var productsBrands =
+                        await JsonSerializer.DeserializeAsync<List<ProductBrand>>(productsBrandData);
+
+                    if (productsBrands is not null && productsBrands.Any())
+                    {
+                        await dbContext.ProductBrands.AddRangeAsync(productsBrands);
+
+                        await dbContext.SaveChangesAsync();
+                    }
+                }
+
+                #endregion
+
+                #region ProductTypes
+
+                if (!dbContext.ProductTypes.Any())
+                {
+                    var productsTypesData =
+                        File.OpenRead(@"..\Persistence\Data\DataSeed\types.json");
+
+                    var productsTypes =
+                        await JsonSerializer.DeserializeAsync<List<ProductType>>(productsTypesData);
+
+                    if (productsTypes is not null && productsTypes.Any())
+                    {
+                        await dbContext.ProductTypes.AddRangeAsync(productsTypes);
+
+                        await dbContext.SaveChangesAsync();
+                    }
+                }
+
+                #endregion
+
+                #region Products
+
+                if (!dbContext.Products.Any())
+                {
+                    var productsData =
+                        File.OpenRead(@"..\Persistence\Data\DataSeed\products.json");
+
+                    var products =
+                        await JsonSerializer.DeserializeAsync<List<Product>>(productsData);
+
+                    if (products is not null && products.Any())
+                    {
+                        await dbContext.Products.AddRangeAsync(products);
+
+                        await dbContext.SaveChangesAsync();
+                    }
+                }
+
+                #endregion
+            }
+            catch (Exception ex)
+            {
+                // TODO: Add logging later
+                Console.WriteLine(ex.Message);
+            }
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Persistence.csproj ====================
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.27" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Service\Service.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Data\DataSeed\" />
+  </ItemGroup>
+
+</Project>
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\SpecificationEvaluater.cs ====================
+
+using DomainLayer.Contracts;
+using DomainLayer.Models;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Persistence
+{
+    static class SpecificationEvaluator
+    {
+        public static IQueryable<TEntity> CreateQuery<TEntity, TKey>(
+            IQueryable<TEntity> InputQuery,
+            ISpecifications<TEntity, TKey> specifications)
+            where TEntity : BaseEntity<TKey>
+        {
+            var Query = InputQuery;
+
+            if (specifications.Criteria is not null)
+            {
+                Query = Query.Where(specifications.Criteria);
+            }
+
+
+            if(specifications.OrderBy is not null)
+            {
+                Query = Query.OrderBy(specifications.OrderBy);
+            }
+            if(specifications.OrderByDesc is not null)
+            {
+                Query = Query.OrderByDescending(specifications.OrderByDesc);
+            }
+
+
+            if (specifications.IncludeExpressions is not null &&
+                specifications.IncludeExpressions.Count > 0)
+            {
+                Query = specifications.IncludeExpressions.Aggregate(
+                    Query,
+                    (CurrentQuery, IncludeExp) =>
+                        CurrentQuery.Include(IncludeExp));
+            }
+
+            if (specifications.IsPaginated)
+            {
+                Query = Query.Skip(specifications.Skip).Take(specifications.Take);
+            }
+            return Query;
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Presentation\Controllers\ProductsController.cs ====================
+
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+using ServiceAbstraction;
+using Shared;
+using Shared.DTOs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Presentation.Controllers
+{
+    // products controller need to use product service
+    // but what if we need to use other services too?
+    // instead of injecting each service separately 
+    // we can inject a service manager that contains all services
+    [ApiController]
+    [Route("api/[controller]")]
+    public class ProductsController(IServiceManager serviceManager) : ControllerBase
+    {
+        [HttpGet]
+        public async Task<ActionResult<PaginatedResult<ProductDTO>>> GetAllProducts([FromQuery]ProductQueryParams queryParams)
+        {
+            var Products = await serviceManager.ProductService.GetAllProductsAsync(queryParams);
+            return Ok(Products);
+        }
+
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<IEnumerable<ProductDTO>>> GetProduct(int id)
+        {
+            var Product = await serviceManager.ProductService.GetProductByIdAsync(id);
+            return Ok(Product);
+        }
+
+        [HttpGet("types")]
+        public async Task<ActionResult<IEnumerable<TypeDTO>>> GetTypes()
+        {
+            var Types = await serviceManager.ProductService.GetAllTypesAsync();
+            return Ok(Types);
+
+        }
+
+        [HttpGet("brands")]
+        public async Task<ActionResult<IEnumerable<BrandDTO>>> GetBrands()
+        {
+            var brands = await serviceManager.ProductService.GetAllBrandsAsync();
+            return Ok(brands);
+
+        }
+
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Presentation\Presentation.csproj ====================
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ServiceAbstraction\ServiceAbstraction.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+  	<FrameworkReference Include="Microsoft.AspNetCore.App"></FrameworkReference>
+  </ItemGroup>
+
+</Project>
+
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\MappingProfiles\PictureResolver.cs ====================
+
+using AutoMapper;
+using DomainLayer.Models;
+using Microsoft.Extensions.Configuration;
+using Shared.DTOs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Service.MappingProfiles
+{
+    internal class PictureResolver(IConfiguration configuration) : IValueResolver<Product, ProductDTO, string>
+    {
+        public string Resolve(Product source, ProductDTO destination, string destMember, ResolutionContext context)
+        {
+            // check if picture is null
+            if (string.IsNullOrEmpty(source.PictureUrl))
+            {
+                return string.Empty;
+            }
+            else
+            {
+                
+                // to access the url from the appsettings.json file, we need to use the IConfiguration interface
+                // download the Microsoft.Extensions.Configuration package to use the IConfiguration interface
+                
+                var url = $"{configuration.GetSection("Urls")["BaseUrl"]}{source.PictureUrl}";
+                return url;
+            }
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\MappingProfiles\ProductProfile.cs ====================
+
+using AutoMapper;
+using DomainLayer.Models;
+using Shared.DTOs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Service.MappingProfiles
+{
+    public class ProductProfile : Profile
+    {
+        public ProductProfile()
+        {
+            // typename and product name must be configurated
+            CreateMap<Product, ProductDTO>()
+                .ForMember(dist => dist.BrandName,
+                options => options.MapFrom(src => src.ProductBrand.Name))
+                .ForMember(dist => dist.TypeName,
+                options => options.MapFrom(src => src.ProductType.Name))
+                .ForMember(dist => dist.PictureUrl,
+                options => options.MapFrom<PictureResolver>());
+
+
+
+            CreateMap<ProductType, TypeDTO>();
+            CreateMap<ProductBrand, BrandDTO>();
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\Specifications\BaseSpecifications.cs ====================
+
+using DomainLayer.Contracts;
+using DomainLayer.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Service.Specifications
+{
+    abstract public class BaseSpecifications<TEntity, Tkey> : ISpecifications<TEntity, Tkey> where TEntity : BaseEntity<Tkey>
+    {
+        protected BaseSpecifications(Expression<Func<TEntity, bool>> CriteriaExpression)
+        {
+            Criteria = CriteriaExpression;
+        }
+        public Expression<Func<TEntity, bool>> Criteria { get; private set; }
+
+
+
+        #region Include
+        public List<Expression<Func<TEntity, object>>> IncludeExpressions { get; } = new List<Expression<Func<TEntity, object>>>();
+
+        protected void AddInclude(Expression<Func<TEntity, object>> IncludeExpression)
+        {
+            IncludeExpressions.Add(IncludeExpression);
+        }
+
+        #endregion
+
+
+
+        #region Sorting
+        public Expression<Func<TEntity, object>> OrderBy { get; private set; }
+        public Expression<Func<TEntity, object>> OrderByDesc { get; private set; }
+        public void AddOrderBy(Expression<Func<TEntity, object>> OrderByExp) => OrderBy = OrderByExp;
+        public void AddOrderByDesc(Expression<Func<TEntity, object>> OrderByExpDesc) => OrderByDesc = OrderByExpDesc;
+
+        #endregion
+
+        public int Skip { get; set; }
+
+        public int Take { get; set; }
+
+        public bool IsPaginated { get ; set; }
+
+        protected void ApplyPagination(int pageSize, int PageIndex)
+        {
+            IsPaginated = true;
+            Take = pageSize;
+            Skip = (PageIndex-1)*pageSize;
+        }
+
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\Specifications\ProdCountSpec.cs ====================
+
+using DomainLayer.Models;
+using Shared;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Service.Specifications
+{
+    class ProdCountSpec : BaseSpecifications<Product, int>
+    {
+        public ProdCountSpec(ProductQueryParams queryParams)
+                : base(P => (!queryParams.BrandId.HasValue || P.BrandId == queryParams.BrandId)
+            && (!queryParams.TypeId.HasValue || P.TypeId == queryParams.TypeId)
+            && (string.IsNullOrWhiteSpace(queryParams.SearchValue) || P.Name.ToLower().Contains(queryParams.SearchValue.ToLower())))
+
+        {
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\Specifications\ProductWithBrandAndTypeSpecification.cs ====================
+
+using DomainLayer.Models;
+using Service.Specifications;
+using Shared;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Services.Specifications
+{
+    class ProductWithBrandAndTypeSpecifications
+        : BaseSpecifications<Product, int>
+    {
+        // Get All Products With Types And Brands
+        public ProductWithBrandAndTypeSpecifications(ProductQueryParams queryParams)
+            : base(P => (!queryParams.BrandId.HasValue || P.BrandId == queryParams.BrandId)
+            && (!queryParams.TypeId.HasValue || P.TypeId == queryParams.TypeId)
+            && (string.IsNullOrWhiteSpace(queryParams.SearchValue) || P.Name.ToLower().Contains(queryParams.SearchValue.ToLower())))
+        {
+            AddInclude(P => P.ProductBrand);
+            AddInclude(P => P.ProductType);
+
+            switch (queryParams.sortingOptions)
+            {
+                case ProductSortingOptions.SortName:
+                    AddOrderBy(P => P.Name);
+                    break;
+                case ProductSortingOptions.SortPrice:
+                    AddOrderBy(P => P.Price);
+                    break;
+                case ProductSortingOptions.SortNameDesc:
+                    AddOrderByDesc(P => P.Name);
+                    break;
+                case ProductSortingOptions.SortPriceDesc:
+                    AddOrderByDesc(P => P.Price);
+                    break;
+                default:
+                    break;
+            }
+
+            ApplyPagination(queryParams.PageSize, queryParams.PageIndex);
+        }
+
+        // Get Product By Id
+        public ProductWithBrandAndTypeSpecifications(int id)
+            : base(P => P.Id == id)
+        {
+            AddInclude(P => P.ProductBrand);
+            AddInclude(P => P.ProductType);
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\AssemblyRef.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Service
+{
+    public class AssemblyRef
+    {
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\ProductService.cs ====================
+
+using AutoMapper;
+using DomainLayer.Contracts;
+using DomainLayer.Models;
+using Service.Specifications;
+using ServiceAbstraction;
+using Services.Specifications;
+using Shared;
+using Shared.DTOs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Service
+{
+    public class ProductService(IUnitOfWork unitOfWork, IMapper mapper) : IProductService
+    {
+        public async Task<IEnumerable<BrandDTO>> GetAllBrandsAsync()
+        {
+            // first call the required repo
+            var Repo = unitOfWork.GetRepository<ProductBrand, int>();
+
+            // use the repo to get what you need
+            var Brands = await Repo.GetAllAsync();
+
+            // auto map to DTO
+            // install automapper to services
+            // inject object from automapper
+            var BrandsDTO = mapper.Map<IEnumerable<ProductBrand>, IEnumerable<BrandDTO>>(Brands);
+
+            // return
+            return BrandsDTO;
+
+            // need to create mapping profile
+            // need to add services to DI container
+
+        }
+
+        
+        public async Task<PaginatedResult<ProductDTO>> GetAllProductsAsync(ProductQueryParams queryParams)
+        {
+            var Repo = unitOfWork.GetRepository<Product, int>();
+            var spec = new ProductWithBrandAndTypeSpecifications(queryParams);
+            var Products = await Repo.GetAllAsync(spec);
+            var data = mapper.Map<IEnumerable<Product>, IEnumerable<ProductDTO>>(Products);
+            var ProdCount = Products.Count();
+            var TotalCount = await Repo.CountAsync(new ProdCountSpec(queryParams));
+            return new PaginatedResult<ProductDTO>(queryParams.PageIndex, ProdCount,TotalCount, data);
+        }
+
+        public async Task<IEnumerable<TypeDTO>> GetAllTypesAsync()
+        {
+            var Types = await unitOfWork.GetRepository<ProductType, int>().GetAllAsync();
+            return mapper.Map<IEnumerable<ProductType>, IEnumerable<TypeDTO>>(Types);
+        }
+
+        public async Task<ProductDTO> GetProductByIdAsync(int Id)
+        {
+            var spec = new ProductWithBrandAndTypeSpecifications(Id);
+            var Product = await unitOfWork.GetRepository<Product, int>().GetByIdAsync(spec);
+            return mapper.Map<Product, ProductDTO>(Product);
+        }
+
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\Service.csproj ====================
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="16.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DomainLayer\DomainLayer.csproj" />
+    <ProjectReference Include="..\ServiceAbstraction\ServiceAbstraction.csproj" />
+  </ItemGroup>
+
+</Project>
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\ServiceManager.cs ====================
+
+using AutoMapper;
+using DomainLayer.Contracts;
+using ServiceAbstraction;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Service
+{
+    public class ServiceManager(IUnitOfWork unitOfWork, IMapper mapper) : IServiceManager
+    {
+        // implement using lazy loading
+        private readonly Lazy<IProductService> _productService
+            = new Lazy<IProductService>(() => new ProductService(unitOfWork, mapper));
+
+        public IProductService ProductService => _productService.Value;
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\ServiceAbstraction\IProductService.cs ====================
+
+using Shared;
+using Shared.DTOs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ServiceAbstraction
+{
+    public interface IProductService
+    {
+        Task<PaginatedResult<ProductDTO>> GetAllProductsAsync(ProductQueryParams queryParams);
+        Task<ProductDTO> GetProductByIdAsync(int Id);
+        Task<IEnumerable<TypeDTO>> GetAllTypesAsync();
+        Task<IEnumerable<BrandDTO>> GetAllBrandsAsync();
+
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\ServiceAbstraction\IServiceManager.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ServiceAbstraction
+{
+    public interface IServiceManager
+    {
+        public IProductService ProductService { get; }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\ServiceAbstraction\ServiceAbstraction.csproj ====================
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Shared.csproj" />
+  </ItemGroup>
+
+</Project>
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\BrandDTO.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Shared.DTOs
+{
+    public class BrandDTO
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = default!;
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\ProductDTO.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Shared.DTOs
+{
+    public class ProductDTO
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = default!;
+        public string Description { get; set; } = default!;
+        public string PictureUrl { get; set; } = default!;
+        public string BrandName { get; set; } = default!;
+        public string TypeName { get; set; } = default!;
+        public decimal Price { get; set; } = default!;
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\TypeDTO.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Shared.DTOs
+{
+    public class TypeDTO
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = default!;
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\PaginatedResult.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Shared
+{
+    public class PaginatedResult<TEntity>
+    {
+        public PaginatedResult(int pageIndex, int pageSize, int totalCount, IEnumerable<TEntity> data)
+        {
+            PageIndex = pageIndex;
+            PageSize = pageSize;
+            TotalCount = totalCount;
+            Data = data;
+        }
+
+        public int PageIndex { get; set; }
+        public int PageSize { get; set; }
+        public int TotalCount { get; set; }
+        public IEnumerable<TEntity> Data { get; set; }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\ProductQueryParams.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Shared
+{
+    public class ProductQueryParams
+    {
+        private const int Default = 5;
+        private const int Max = 10;
+        public int? BrandId { get; set; }
+        public int? TypeId { get; set; }
+        public ProductSortingOptions sortingOptions { get; set; }
+        public string? SearchValue { get; set; }
+        public int PageIndex { get; set; } = 1;
+
+        private int pageSize;
+
+        public int PageSize
+        {
+            get { return pageSize; }
+            set { pageSize = value>Max? Max: value; }
+
+        }
+
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\ProductSortingOptions.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Shared
+{
+    public enum ProductSortingOptions
+    {
+        SortName=1,
+        SortNameDesc=2,
+        SortPriceDesc=3,
+        SortPrice=4,
+        
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\Shared.csproj ====================
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,8 @@
+Get-ChildItem -Recurse -Include *.cs,*.csproj,*.json |
+Where-Object {
+    $_.FullName -notmatch '\\bin\\|\\obj\\|\\Migrations\\'
+} |
+ForEach-Object {
+    "`n`n==================== FILE: $($_.FullName) ====================`n"
+    Get-Content $_.FullName
+} | Set-Content project-code.txt
