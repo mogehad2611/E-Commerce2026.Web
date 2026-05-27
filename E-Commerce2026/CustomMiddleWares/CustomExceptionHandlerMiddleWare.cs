@@ -1,4 +1,5 @@
-﻿using Shared.ErrorModels;
+﻿using DomainLayer.Exceptions;
+using Shared.ErrorModels;
 using System.Text.Json;
 
 namespace E_Commerce2026.CustomMiddleWares
@@ -15,23 +16,47 @@ namespace E_Commerce2026.CustomMiddleWares
         }
         public async Task InvokeAsync(HttpContext httpContext)
         {
-            try 
+            try
             {
                 await requestDelegate.Invoke(httpContext);
+                await HandleNotFoundEndPointAsync(httpContext);
+
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "something went wrong");
+                await HandleException(httpContext, ex);
+            }
+        }
 
-                httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        private static async Task HandleException(HttpContext httpContext, Exception ex)
+        {
+            httpContext.Response.StatusCode = ex switch
+            {
+                NotFoundException => StatusCodes.Status404NotFound,
+                _ => StatusCodes.Status500InternalServerError
+            };
 
-                var response = new ErrorToReturn()
+            var response = new ErrorToReturn()
+            {
+                StatusCode = httpContext.Response.StatusCode,
+                ErrorMessage = ex.Message
+            };
+
+            await httpContext.Response.WriteAsJsonAsync(response);
+        }
+
+        private static async Task HandleNotFoundEndPointAsync(HttpContext httpContext)
+        {
+            if (httpContext.Response.StatusCode == StatusCodes.Status404NotFound)
+            {
+                var Response = new ErrorToReturn()
                 {
-                    StatusCode = StatusCodes.Status500InternalServerError,
-                    ErrorMessage = ex.Message
+                    StatusCode = StatusCodes.Status404NotFound,
+                    ErrorMessage = $"The end point{httpContext.Request.Path} is not found"
                 };
 
-                await httpContext.Response.WriteAsJsonAsync(response);
+                await httpContext.Response.WriteAsJsonAsync(Response);
             }
         }
     }

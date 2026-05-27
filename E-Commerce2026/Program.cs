@@ -1,5 +1,7 @@
 using DomainLayer.Contracts;
 using E_Commerce2026.CustomMiddleWares;
+using E_Commerce2026.Factories;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -9,6 +11,7 @@ using Persistence.Repositories;
 using Service;
 using Service.MappingProfiles;
 using ServiceAbstraction;
+using Shared.ErrorModels;
 
 namespace ECommerce.Web
 {
@@ -49,6 +52,11 @@ namespace ECommerce.Web
 
             builder.Services.AddScoped<IServiceManager, ServiceManager>();
 
+            builder.Services.Configure<ApiBehaviorOptions>((Options) =>
+            {
+                Options.InvalidModelStateResponseFactory = APIResponseFactory.GenApiValidaionResponse;
+                
+            });
 
 
             #endregion
