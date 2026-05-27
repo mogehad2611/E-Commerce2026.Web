@@ -1,4 +1,5 @@
 using DomainLayer.Contracts;
+using E_Commerce2026.CustomMiddleWares;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -65,6 +66,8 @@ namespace ECommerce.Web
             #endregion
 
             #region Configure the HTTP request pipeline.
+
+            app.UseMiddleware<CustomExceptionHandlerMiddleWare>();
 
             if (app.Environment.IsDevelopment())
             {
