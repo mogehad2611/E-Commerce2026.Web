@@ -1,5 +1,6 @@
 using DomainLayer.Contracts;
 using E_Commerce2026.CustomMiddleWares;
+using E_Commerce2026.Extentions;
 using E_Commerce2026.Factories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -27,37 +28,14 @@ namespace ECommerce.Web
             // without it ASP.NET doesn't know that
             // your project contain controllers
 
-            builder.Services.AddEndpointsApiExplorer();
-            // discover all API endpoints
-            // each action in the controller is
-            // considered an endpoint
 
-            builder.Services.AddSwaggerGen();
-            // convert discovered metadata [endpoints]
-            // into OpenAPI specification [JSON]
-
-            builder.Services.AddDbContext<StoreDbContext>(Options =>
-            {
-                Options.UseSqlServer(builder.Configuration.GetConnectionString("Default"));
-            });
-
-            builder.Services.AddScoped<IDataSeeding, DataSeeding>();
-
-            builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-
-            //builder.Services.AddAutoMapper(X => X.AddProfile(new ProductProfile()));
-
-            builder.Services.AddAutoMapper(cfg => { },
-                typeof(Service.AssemblyRef).Assembly);
-
-            builder.Services.AddScoped<IServiceManager, ServiceManager>();
-
-            builder.Services.Configure<ApiBehaviorOptions>((Options) =>
-            {
-                Options.InvalidModelStateResponseFactory = APIResponseFactory.GenApiValidaionResponse;
-                
-            });
-
+            builder.Services.AddSwaggerServices();
+            builder.Services.AddInfrastructureServices(builder.Configuration);
+            builder.Services.AddServiceRegister();
+            builder.Services.AddWebServices();
+            
+            
+            
 
             #endregion
 
