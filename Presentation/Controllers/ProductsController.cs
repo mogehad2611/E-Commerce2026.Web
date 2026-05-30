@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using ServiceAbstraction;
 using Shared;
-using Shared.DTOs;
+using Shared.DTOs.ProductModuleDTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;

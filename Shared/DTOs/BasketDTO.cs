@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace Shared.DTOs
 {
-    public class TypeDTO
+    public class BasketDTO
     {
-        public int Id { get; set; }
-        public string Name { get; set; } = default!;
+        public string Id { get; set; }
+        public ICollection<BasketItemDTO> Items { get; set; } = [];
     }
 }
