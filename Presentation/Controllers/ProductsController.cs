@@ -16,9 +16,8 @@ namespace Presentation.Controllers
     // but what if we need to use other services too?
     // instead of injecting each service separately 
     // we can inject a service manager that contains all services
-    [ApiController]
-    [Route("api/[controller]")]
-    public class ProductsController(IServiceManager serviceManager) : ControllerBase
+    
+    public class ProductsController(IServiceManager serviceManager) : APIBaseController
     {
         [HttpGet]
         public async Task<ActionResult<PaginatedResult<ProductDTO>>> GetAllProducts([FromQuery]ProductQueryParams queryParams)

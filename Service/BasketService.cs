@@ -3,7 +3,7 @@ using DomainLayer.Contracts;
 using DomainLayer.Exceptions;
 using DomainLayer.Models.BasketModule;
 using ServiceAbstraction;
-using Shared.DTOs;
+using Shared.DTOs.BasketModuleDTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;

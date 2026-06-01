@@ -1,5 +1,25 @@
 
 
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Contracts\IBasketRepository.cs ====================
+
+using DomainLayer.Models.BasketModule;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Contracts
+{
+    public interface IBasketRepository
+    {
+        Task<CustomerBasket?> GetCustomerBasketAsyn(string key);
+        Task<bool> DeleteCustomerBasketAsyn(string key);
+        Task<CustomerBasket?> CreateOrUpdateBasketAsync(CustomerBasket basket, TimeSpan? span = null!);
+    }
+}
+
+
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Contracts\IDataSeeding.cs ====================
 
 using System;
@@ -94,6 +114,153 @@ namespace DomainLayer.Contracts
 }
 
 
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Exceptions\BasketNotFoundException.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Exceptions
+{
+    public class BasketNotFoundException(string Id):NotFoundException($"The Basket with id {Id} is Not Found")
+    {
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Exceptions\NotFoundException.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Exceptions
+{
+    public abstract class NotFoundException(string Message): Exception(Message)
+    {
+
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Exceptions\ProductNotFoundException.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Exceptions
+{
+    public sealed class ProductNotFoundException(int id):NotFoundException($"Product with Id {id} is not found")
+    {
+
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\BasketModule\BasketItem.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Models.BasketModule
+{
+    public class BasketItem
+    {
+        public int Id { get; set; }
+        public int Quantity { get; set; }
+        public string PictureUrl { get; set; } = default!;
+        public string ProductName { get; set; } = default!;
+        public decimal Price { get; set; }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\BasketModule\CustomerBasket.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Models.BasketModule
+{
+    public class CustomerBasket
+    {
+        public string Id { get; set; }
+        public ICollection<BasketItem> Items { get; set; } = [];
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\ProductModule\Product.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Models.ProductModule
+{
+    public class Product:BaseEntity<int>
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public string PictureUrl { get; set; }
+        public decimal Price { get; set; }
+        public ProductBrand ProductBrand { get; set; }
+        public int BrandId { get; set; }
+        public ProductType ProductType { get; set; }
+        public int TypeId { get; set; }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\ProductModule\ProductBrand.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Models.ProductModule
+{
+    public class ProductBrand:BaseEntity<int>
+    {
+        public string Name { get; set; }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\ProductModule\ProductType.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Models.ProductModule
+{
+    public class ProductType:BaseEntity<int>
+    {
+        public string Name { get; set; }
+    }
+}
+
+
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\BaseEntity.cs ====================
 
 using System;
@@ -111,64 +278,6 @@ namespace DomainLayer.Models
 }
 
 
-==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\Product.cs ====================
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace DomainLayer.Models
-{
-    public class Product:BaseEntity<int>
-    {
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public string PictureUrl { get; set; }
-        public decimal Price { get; set; }
-        public ProductBrand ProductBrand { get; set; }
-        public int BrandId { get; set; }
-        public ProductType ProductType { get; set; }
-        public int TypeId { get; set; }
-    }
-}
-
-
-==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\ProductBrand.cs ====================
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace DomainLayer.Models
-{
-    public class ProductBrand:BaseEntity<int>
-    {
-        public string Name { get; set; }
-    }
-}
-
-
-==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\ProductType.cs ====================
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace DomainLayer.Models
-{
-    public class ProductType:BaseEntity<int>
-    {
-        public string Name { get; set; }
-    }
-}
-
-
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\DomainLayer.csproj ====================
 
 <Project Sdk="Microsoft.NET.Sdk">
@@ -179,15 +288,12 @@ namespace DomainLayer.Models
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Folder Include="Exceptions\" />
-  </ItemGroup>
-
 </Project>
 
 
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\E-Commerce2026\CustomMiddleWares\CustomExceptionHandlerMiddleWare.cs ====================
 
+using DomainLayer.Exceptions;
 using Shared.ErrorModels;
 using System.Text.Json;
 
@@ -205,24 +311,118 @@ namespace E_Commerce2026.CustomMiddleWares
         }
         public async Task InvokeAsync(HttpContext httpContext)
         {
-            try 
+            try
             {
                 await requestDelegate.Invoke(httpContext);
+                await HandleNotFoundEndPointAsync(httpContext);
+
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "something went wrong");
+                await HandleException(httpContext, ex);
+            }
+        }
 
-                httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        private static async Task HandleException(HttpContext httpContext, Exception ex)
+        {
+            httpContext.Response.StatusCode = ex switch
+            {
+                NotFoundException => StatusCodes.Status404NotFound,
+                _ => StatusCodes.Status500InternalServerError
+            };
 
-                var response = new ErrorToReturn()
+            var response = new ErrorToReturn()
+            {
+                StatusCode = httpContext.Response.StatusCode,
+                ErrorMessage = ex.Message
+            };
+
+            await httpContext.Response.WriteAsJsonAsync(response);
+        }
+
+        private static async Task HandleNotFoundEndPointAsync(HttpContext httpContext)
+        {
+            if (httpContext.Response.StatusCode == StatusCodes.Status404NotFound)
+            {
+                var Response = new ErrorToReturn()
                 {
-                    StatusCode = StatusCodes.Status500InternalServerError,
-                    ErrorMessage = ex.Message
+                    StatusCode = StatusCodes.Status404NotFound,
+                    ErrorMessage = $"The end point{httpContext.Request.Path} is not found"
                 };
 
-                await httpContext.Response.WriteAsJsonAsync(response);
+                await httpContext.Response.WriteAsJsonAsync(Response);
             }
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\E-Commerce2026\Extentions\ServiceRegistration.cs ====================
+
+using E_Commerce2026.Factories;
+using Microsoft.AspNetCore.Mvc;
+
+namespace E_Commerce2026.Extentions
+{
+    public static class ServiceRegistration
+    {
+        public static IServiceCollection AddSwaggerServices(this IServiceCollection Services)
+        {
+
+            Services.AddEndpointsApiExplorer();
+            // discover all API endpoints
+            // each action in the controller is
+            // considered an endpoint
+
+            Services.AddSwaggerGen();
+            // convert discovered metadata [endpoints]
+            // into OpenAPI specification [JSON]
+            return Services;
+        }
+
+        public static IServiceCollection AddWebServices(this IServiceCollection services)
+        {
+
+            services.Configure<ApiBehaviorOptions>((Options) =>
+            {
+                Options.InvalidModelStateResponseFactory = APIResponseFactory.GenApiValidaionResponse;
+
+            });
+
+
+
+            return services;
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\E-Commerce2026\Factories\APIResponseFactory.cs ====================
+
+using Microsoft.AspNetCore.Mvc;
+using Shared.ErrorModels;
+
+namespace E_Commerce2026.Factories
+{
+    public static class APIResponseFactory
+    {
+        public static IActionResult GenApiValidaionResponse (ActionContext Context)
+        {
+            var Errors = Context.ModelState
+                        .Where(M => M.Value.Errors.Any())
+                        .Select(M => new ValidationError()
+                        {
+                            Field = M.Key,
+                            Errors = M.Value.Errors.Select(E => E.ErrorMessage)
+                        });
+
+            var response = new ValidationErrorsToReturn()
+            {
+                ValidationErrors = Errors
+            };
+
+            return new BadRequestObjectResult(response);
         }
     }
 }
@@ -297,7 +497,8 @@ namespace E_Commerce2026.CustomMiddleWares
   "AllowedHosts": "*",
 
   "ConnectionStrings": {
-    "Default": "Server = . ; Database = ECommerce2026 ; Trusted_Connection = true ; TrustServerCertificate = true ;"
+    "Default": "Server = . ; Database = ECommerce2026 ; Trusted_Connection = true ; TrustServerCertificate = true ;",
+    "RedisConnectionString": "localhost"
   },
 
   "Urls": {
@@ -341,6 +542,9 @@ namespace E_Commerce2026.CustomMiddleWares
 
 using DomainLayer.Contracts;
 using E_Commerce2026.CustomMiddleWares;
+using E_Commerce2026.Extentions;
+using E_Commerce2026.Factories;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -350,6 +554,7 @@ using Persistence.Repositories;
 using Service;
 using Service.MappingProfiles;
 using ServiceAbstraction;
+using Shared.ErrorModels;
 
 namespace ECommerce.Web
 {
@@ -365,32 +570,14 @@ namespace ECommerce.Web
             // without it ASP.NET doesn't know that
             // your project contain controllers
 
-            builder.Services.AddEndpointsApiExplorer();
-            // discover all API endpoints
-            // each action in the controller is
-            // considered an endpoint
 
-            builder.Services.AddSwaggerGen();
-            // convert discovered metadata [endpoints]
-            // into OpenAPI specification [JSON]
-
-            builder.Services.AddDbContext<StoreDbContext>(Options =>
-            {
-                Options.UseSqlServer(builder.Configuration.GetConnectionString("Default"));
-            });
-
-            builder.Services.AddScoped<IDataSeeding, DataSeeding>();
-
-            builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-
-            //builder.Services.AddAutoMapper(X => X.AddProfile(new ProductProfile()));
-
-            builder.Services.AddAutoMapper(cfg => { },
-                typeof(Service.AssemblyRef).Assembly);
-
-            builder.Services.AddScoped<IServiceManager, ServiceManager>();
-
-
+            builder.Services.AddSwaggerServices();
+            builder.Services.AddInfrastructureServices(builder.Configuration);
+            builder.Services.AddServiceRegister();
+            builder.Services.AddWebServices();
+            
+            
+            
 
             #endregion
 
@@ -441,7 +628,7 @@ namespace ECommerce.Web
 
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Data\Configurations\ProductConfigurations.cs ====================
 
-using DomainLayer.Models;
+using DomainLayer.Models.ProductModule;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
@@ -701,7 +888,7 @@ namespace Persistence.Data.Configurations
 
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Data\StoreDbContext.cs ====================
 
-using DomainLayer.Models;
+using DomainLayer.Models.ProductModule;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -724,6 +911,53 @@ namespace Persistence.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AssemblyReference).Assembly);
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Repositories\BasketRepository.cs ====================
+
+using DomainLayer.Contracts;
+using DomainLayer.Models.BasketModule;
+using StackExchange.Redis;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
+
+namespace Persistence.Repositories
+{
+    public class BasketRepository(IConnectionMultiplexer connection) : IBasketRepository
+    {
+        private readonly IDatabase _connection = connection.GetDatabase();
+
+        public async Task<CustomerBasket?> CreateOrUpdateBasketAsync(CustomerBasket basket, TimeSpan? span = null)
+        {
+            var JsonBasket = JsonSerializer.Serialize(basket);
+            var IsCreatedOrUpdated = await _connection.StringSetAsync(basket.Id, JsonBasket, span ?? TimeSpan.FromDays(30));
+            if (IsCreatedOrUpdated)
+            {
+                return await GetCustomerBasketAsyn(basket.Id);
+            }
+            else
+                return null;
+        }
+
+        public async Task<bool> DeleteCustomerBasketAsyn(string key)
+        {
+            return await _connection.KeyDeleteAsync(key);
+        }
+
+        public async Task<CustomerBasket?> GetCustomerBasketAsyn(string key)
+        {
+            var basket =await _connection.StringGetAsync(key);
+            if (basket.IsNullOrEmpty)
+                return null;
+            else
+                return JsonSerializer.Deserialize<CustomerBasket>(basket!);
         }
     }
 }
@@ -864,7 +1098,7 @@ namespace Persistence
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\DataSeeding.cs ====================
 
 using DomainLayer.Contracts;
-using DomainLayer.Models;
+using DomainLayer.Models.ProductModule;
 using Microsoft.EntityFrameworkCore;
 using Persistence.Data;
 using System.Text.Json;
@@ -953,6 +1187,49 @@ namespace Persistence
 }
 
 
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\InfrastructureServiceRegisteration.cs ====================
+
+using DomainLayer.Contracts;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Persistence.Data;
+using Persistence.Repositories;
+using StackExchange.Redis;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Persistence
+{
+    public static class InfrastructureServiceRegisteration
+    {
+        public static IServiceCollection AddInfrastructureServices(this IServiceCollection services , IConfiguration Configuration)
+        {
+            services.AddDbContext<StoreDbContext>(Options =>
+            {
+                Options.UseSqlServer(Configuration.GetConnectionString("Default"));
+            });
+
+            services.AddScoped<IDataSeeding, DataSeeding>();
+
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+            services.AddScoped<IBasketRepository, BasketRepository>();
+
+            services.AddSingleton<IConnectionMultiplexer>( (_) =>
+            {
+                return ConnectionMultiplexer.Connect(Configuration.GetConnectionString("RedisConnectionString"));
+            });
+
+            return services;
+        }
+    }
+}
+
+
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Persistence.csproj ====================
 
 <Project Sdk="Microsoft.NET.Sdk">
@@ -965,6 +1242,7 @@ namespace Persistence
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.27" />
+    <PackageReference Include="StackExchange.Redis" Version="2.13.17" />
   </ItemGroup>
 
   <ItemGroup>
@@ -1035,13 +1313,57 @@ namespace Persistence
 }
 
 
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Presentation\Controllers\BasketController.cs ====================
+
+using Microsoft.AspNetCore.Mvc;
+using ServiceAbstraction;
+using Shared.DTOs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Presentation.Controllers
+{
+    [ApiController]
+    [Route("api/[Controller]")]
+    public class BasketController(IServiceManager serviceManager): ControllerBase
+    {
+        [HttpGet]
+        public async Task<ActionResult<BasketDTO>> GetBasket(string key)
+        {
+            var basket = await serviceManager.BasketService.GetBasket(key);
+            return Ok(basket);
+        }
+
+
+        [HttpPost]
+        public async Task<ActionResult<BasketDTO>> CreateOrUpdateBasket(BasketDTO basketDTO)
+        {
+            var basket = await serviceManager.BasketService.CreateOrUpdateBasket(basketDTO);
+            return Ok(basket);
+        }
+
+
+
+        [HttpDelete]
+        public async Task<ActionResult<bool>> DeleteBasket(string key)
+        {
+            var result = await serviceManager.BasketService.DeleteBasket(key);
+            return Ok(result);
+        }
+    }
+}
+
+
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Presentation\Controllers\ProductsController.cs ====================
 
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using ServiceAbstraction;
 using Shared;
-using Shared.DTOs;
+using Shared.DTOs.ProductModuleDTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -1114,12 +1436,36 @@ namespace Presentation.Controllers
 
 
 
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\MappingProfiles\BasketProfile.cs ====================
+
+using AutoMapper;
+using DomainLayer.Models.BasketModule;
+using Shared.DTOs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Service.MappingProfiles
+{
+    internal class BasketProfile : Profile
+    {
+        public BasketProfile()
+        {
+            CreateMap<CustomerBasket, BasketDTO>().ReverseMap();
+            CreateMap<BasketItem, BasketItemDTO>().ReverseMap();
+        }
+    }
+}
+
+
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\MappingProfiles\PictureResolver.cs ====================
 
 using AutoMapper;
-using DomainLayer.Models;
+using DomainLayer.Models.ProductModule;
 using Microsoft.Extensions.Configuration;
-using Shared.DTOs;
+using Shared.DTOs.ProductModuleDTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -1154,8 +1500,8 @@ namespace Service.MappingProfiles
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\MappingProfiles\ProductProfile.cs ====================
 
 using AutoMapper;
-using DomainLayer.Models;
-using Shared.DTOs;
+using DomainLayer.Models.ProductModule;
+using Shared.DTOs.ProductModuleDTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -1248,7 +1594,7 @@ namespace Service.Specifications
 
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\Specifications\ProdCountSpec.cs ====================
 
-using DomainLayer.Models;
+using DomainLayer.Models.ProductModule;
 using Shared;
 using System;
 using System.Collections.Generic;
@@ -1274,7 +1620,7 @@ namespace Service.Specifications
 
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\Specifications\ProductWithBrandAndTypeSpecification.cs ====================
 
-using DomainLayer.Models;
+using DomainLayer.Models.ProductModule;
 using Service.Specifications;
 using Shared;
 using System;
@@ -1329,6 +1675,34 @@ namespace Services.Specifications
 }
 
 
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\AppServiceRegistration.cs ====================
+
+using Microsoft.Extensions.DependencyInjection;
+using ServiceAbstraction;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Service
+{
+    public static class AppServiceRegistration
+    {
+        public static IServiceCollection AddServiceRegister(this IServiceCollection services)
+        {
+            services.AddAutoMapper(cfg => { },
+                typeof(Service.AssemblyRef).Assembly);
+
+            services.AddScoped<IServiceManager, ServiceManager>();
+
+            return services;
+
+        }
+    }
+}
+
+
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\AssemblyRef.cs ====================
 
 using System;
@@ -1345,16 +1719,66 @@ namespace Service
 }
 
 
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\BasketService.cs ====================
+
+using AutoMapper;
+using DomainLayer.Contracts;
+using DomainLayer.Exceptions;
+using DomainLayer.Models.BasketModule;
+using ServiceAbstraction;
+using Shared.DTOs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Service
+{
+    public class BasketService(IBasketRepository repository,IMapper mapper) : IBasketService
+    {
+        public Task<BasketDTO> CreateOrUpdateBasket(BasketDTO basket)
+        {
+            var CustomerBasket = mapper.Map<BasketDTO, CustomerBasket>(basket);
+            var IsCreated = repository.CreateOrUpdateBasketAsync(CustomerBasket);
+            if (IsCreated is not null)
+            {
+                return GetBasket(basket.Id);
+            }
+            else
+                throw new Exception("Basket Does not exist");
+        }
+
+        public async Task<bool> DeleteBasket(string key)
+        {
+            return await repository.DeleteCustomerBasketAsyn(key);
+        }
+
+        public async Task<BasketDTO> GetBasket(string key)
+        {
+            var Basket = await repository.GetCustomerBasketAsyn(key);
+            if (Basket is not null)
+            {
+                return mapper.Map<CustomerBasket, BasketDTO>(Basket);
+            }
+            else
+                throw new BasketNotFoundException(key);
+        }
+    }
+}
+
+
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\ProductService.cs ====================
 
 using AutoMapper;
 using DomainLayer.Contracts;
-using DomainLayer.Models;
+using DomainLayer.Exceptions;
+using DomainLayer.Models.ProductModule;
 using Service.Specifications;
 using ServiceAbstraction;
 using Services.Specifications;
 using Shared;
-using Shared.DTOs;
+using Shared.DTOs.ProductModuleDTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -1408,6 +1832,10 @@ namespace Service
         {
             var spec = new ProductWithBrandAndTypeSpecifications(Id);
             var Product = await unitOfWork.GetRepository<Product, int>().GetByIdAsync(spec);
+            if(Product is null)
+            {
+                throw new ProductNotFoundException(Id);
+            }
             return mapper.Map<Product, ProductDTO>(Product);
         }
 
@@ -1451,13 +1879,37 @@ using System.Threading.Tasks;
 
 namespace Service
 {
-    public class ServiceManager(IUnitOfWork unitOfWork, IMapper mapper) : IServiceManager
+    public class ServiceManager(IUnitOfWork unitOfWork, IMapper mapper , IBasketRepository basketRepository) : IServiceManager
     {
         // implement using lazy loading
         private readonly Lazy<IProductService> _productService
             = new Lazy<IProductService>(() => new ProductService(unitOfWork, mapper));
+        private readonly Lazy<IBasketService> _basketService
+            = new Lazy<IBasketService>(() => new BasketService(basketRepository, mapper));
 
         public IProductService ProductService => _productService.Value;
+
+        public IBasketService BasketService => _basketService.Value;
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\ServiceAbstraction\IBasketService.cs ====================
+
+using Shared.DTOs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ServiceAbstraction
+{
+    public interface IBasketService
+    {
+        Task<BasketDTO> GetBasket(string key);
+        Task<BasketDTO> CreateOrUpdateBasket(BasketDTO basket);
+        Task<bool> DeleteBasket(string key);
     }
 }
 
@@ -1465,7 +1917,7 @@ namespace Service
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\ServiceAbstraction\IProductService.cs ====================
 
 using Shared;
-using Shared.DTOs;
+using Shared.DTOs.ProductModuleDTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -1498,6 +1950,7 @@ namespace ServiceAbstraction
     public interface IServiceManager
     {
         public IProductService ProductService { get; }
+        public IBasketService BasketService { get; }
     }
 }
 
@@ -1519,7 +1972,7 @@ namespace ServiceAbstraction
 </Project>
 
 
-==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\BrandDTO.cs ====================
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\ProductModuleDTOs\BrandDTO.cs ====================
 
 using System;
 using System.Collections.Generic;
@@ -1527,7 +1980,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Shared.DTOs
+namespace Shared.DTOs.ProductModuleDTOs
 {
     public class BrandDTO
     {
@@ -1537,7 +1990,7 @@ namespace Shared.DTOs
 }
 
 
-==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\ProductDTO.cs ====================
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\ProductModuleDTOs\ProductDTO.cs ====================
 
 using System;
 using System.Collections.Generic;
@@ -1545,7 +1998,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Shared.DTOs
+namespace Shared.DTOs.ProductModuleDTOs
 {
     public class ProductDTO
     {
@@ -1560,7 +2013,25 @@ namespace Shared.DTOs
 }
 
 
-==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\TypeDTO.cs ====================
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\ProductModuleDTOs\TypeDTO.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Shared.DTOs.ProductModuleDTOs
+{
+    public class TypeDTO
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = default!;
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\BasketDTO.cs ====================
 
 using System;
 using System.Collections.Generic;
@@ -1570,10 +2041,34 @@ using System.Threading.Tasks;
 
 namespace Shared.DTOs
 {
-    public class TypeDTO
+    public class BasketDTO
+    {
+        public string Id { get; set; }
+        public ICollection<BasketItemDTO> Items { get; set; } = [];
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\BasketItemDTO.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Shared.DTOs
+{
+    public class BasketItemDTO
     {
         public int Id { get; set; }
-        public string Name { get; set; } = default!;
+        [Range(1,100)]
+        public int Quantity { get; set; }
+        public string PictureUrl { get; set; } = default!;
+        public string ProductName { get; set; } = default!;
+        [Range(1,double.MaxValue)]
+        public decimal Price { get; set; }
     }
 }
 
@@ -1592,6 +2087,44 @@ namespace Shared.ErrorModels
     {
         public int StatusCode { get; set; }
         public string ErrorMessage { get; set; } = default!;
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\ErrorModels\ValidationError.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Shared.ErrorModels
+{
+    public class ValidationError
+    {
+        public string Field { get; set; } = default!;
+        public IEnumerable<string> Errors { get; set; } = [];
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\ErrorModels\ValidationErrorsToReturn.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Shared.ErrorModels
+{
+    public class ValidationErrorsToReturn
+    {
+        public int StatusCode { get; set; } = (int)HttpStatusCode.BadRequest;
+        public string Message { get; set; } = "Validation Failed";
+        public IEnumerable<ValidationError> ValidationErrors { get; set; } = [];
     }
 }
 
@@ -1689,5 +2222,9 @@ namespace Shared
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="DTOs\BasketModuleDTOs\" />
+  </ItemGroup>
 
 </Project>
