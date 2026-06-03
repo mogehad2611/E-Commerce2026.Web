@@ -32,7 +32,7 @@ namespace Presentation.Controllers
         [HttpGet("CheckEmail")]
         public async Task<ActionResult<bool>> CheckEmail(string email)
         {
-            var Result = serviceManager.AuthenticationService.CheckEmail(email);
+            var Result = await serviceManager.AuthenticationService.CheckEmail(email);
             return Ok(Result);
         }
 

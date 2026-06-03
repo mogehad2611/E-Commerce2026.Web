@@ -33,6 +33,7 @@ namespace DomainLayer.Contracts
     public interface IDataSeeding
     {
         Task DataSeedAsync();
+        Task IdentityDataSeedAsync();
     }
 }
 
@@ -114,6 +115,39 @@ namespace DomainLayer.Contracts
 }
 
 
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Exceptions\AddressNotFoundException.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Exceptions
+{
+    public class AddressNotFoundException(string username):NotFoundException($"User {username} has no address ")
+    {
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Exceptions\BadRequestException.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Exceptions
+{
+    public sealed class BadRequestException(List<string> errors) : Exception("Validation Error")
+    {
+        public List<string> Errors { get; } = errors;
+    }
+}
+
+
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Exceptions\BasketNotFoundException.cs ====================
 
 using System;
@@ -164,6 +198,38 @@ namespace DomainLayer.Exceptions
 }
 
 
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Exceptions\UnAuthorizedException.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Exceptions
+{
+    public sealed class UnAuthorizedException(string message="wrong user or password"):Exception(message)
+    {
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Exceptions\UserNotFoundException.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Exceptions
+{
+    public sealed class UserNotFoundException(string email):NotFoundException($"user with email {email} is not Not Found")
+    {
+    }
+}
+
+
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\BasketModule\BasketItem.cs ====================
 
 using System;
@@ -197,8 +263,46 @@ namespace DomainLayer.Models.BasketModule
 {
     public class CustomerBasket
     {
-        public string Id { get; set; }
+        public string Id { get; set; } = default!;
         public ICollection<BasketItem> Items { get; set; } = [];
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\IdentityModule\Address.cs ====================
+
+namespace DomainLayer.Models.IdentityModule
+{
+    public class Address
+    {
+        public int Id { get; set; }
+        public string Fname { get; set; } = default!;
+        public string Lname { get; set; } = default!;
+        public string Street { get; set; } = default!;
+        public string City { get; set; } = default!;
+        public string Country { get; set; } = default!;
+        public AppUser User { get; set; } = default!;
+        public string UserId { get; set; }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\IdentityModule\AppUser.cs ====================
+
+using Microsoft.AspNetCore.Identity;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Models.IdentityModule
+{
+    public class AppUser : IdentityUser
+    {
+        public string DisplayName { get; set; } = default!;
+        public Address? Address { get; set; }
     }
 }
 
@@ -215,7 +319,7 @@ namespace DomainLayer.Models.ProductModule
 {
     public class Product:BaseEntity<int>
     {
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
         public string Description { get; set; }
         public string PictureUrl { get; set; }
         public decimal Price { get; set; }
@@ -288,6 +392,10 @@ namespace DomainLayer.Models
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.27" />
+  </ItemGroup>
+
 </Project>
 
 
@@ -326,19 +434,28 @@ namespace E_Commerce2026.CustomMiddleWares
 
         private static async Task HandleException(HttpContext httpContext, Exception ex)
         {
-            httpContext.Response.StatusCode = ex switch
-            {
-                NotFoundException => StatusCodes.Status404NotFound,
-                _ => StatusCodes.Status500InternalServerError
-            };
-
             var response = new ErrorToReturn()
             {
                 StatusCode = httpContext.Response.StatusCode,
                 ErrorMessage = ex.Message
             };
 
+            httpContext.Response.StatusCode = ex switch
+            {
+                NotFoundException => StatusCodes.Status404NotFound,
+                UnAuthorizedException => StatusCodes.Status401Unauthorized,
+                BadRequestException badRequestException => GetBadRequestErrors(badRequestException, response),
+                _ => StatusCodes.Status500InternalServerError
+            };
+
+
             await httpContext.Response.WriteAsJsonAsync(response);
+        }
+
+        private static int GetBadRequestErrors(BadRequestException badRequestException, ErrorToReturn response)
+        {
+            response.Errors = badRequestException.Errors;
+            return StatusCodes.Status400BadRequest;
         }
 
         private static async Task HandleNotFoundEndPointAsync(HttpContext httpContext)
@@ -362,6 +479,9 @@ namespace E_Commerce2026.CustomMiddleWares
 
 using E_Commerce2026.Factories;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace E_Commerce2026.Extentions
 {
@@ -381,7 +501,7 @@ namespace E_Commerce2026.Extentions
             return Services;
         }
 
-        public static IServiceCollection AddWebServices(this IServiceCollection services)
+        public static IServiceCollection AddWebServices(this IServiceCollection services, IConfiguration configuration)
         {
 
             services.Configure<ApiBehaviorOptions>((Options) =>
@@ -390,7 +510,29 @@ namespace E_Commerce2026.Extentions
 
             });
 
+            services.AddAuthentication(Config =>
+            {
+                Config.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                Config.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 
+            })
+            .AddJwtBearer(Options =>
+            {
+                Options.TokenValidationParameters = new TokenValidationParameters()
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = configuration["JWTOptions:Issuer"],
+
+                    ValidateAudience = true,
+                    ValidAudience = configuration["JWTOptions:Audience"],
+
+                    ValidateLifetime = true,
+
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(configuration["JWTOptions:SecretKey"])
+                    )
+                };
+            });
 
             return services;
         }
@@ -498,11 +640,17 @@ namespace E_Commerce2026.Factories
 
   "ConnectionStrings": {
     "Default": "Server = . ; Database = ECommerce2026 ; Trusted_Connection = true ; TrustServerCertificate = true ;",
+    "IdentityDefault": "Server = . ; Database = ECommerce2026.Identity ; Trusted_Connection = true ; TrustServerCertificate = true ;",
     "RedisConnectionString": "localhost"
   },
 
   "Urls": {
     "BaseUrl": "https://localhost:7235/"
+  },
+  "JWTOptions": {
+    "SecretKey": "7f3c9b2e1a6d4c8f9e2b5a1d7c6e3f8b4a9c2d5e7f1a3b6c8d9e0f2a4b6c8d1",
+    "Issuer": "https://localhost:1234/",
+    "Audience": "https://localhost:7050/api"
   }
 }
 
@@ -574,7 +722,9 @@ namespace ECommerce.Web
             builder.Services.AddSwaggerServices();
             builder.Services.AddInfrastructureServices(builder.Configuration);
             builder.Services.AddServiceRegister();
-            builder.Services.AddWebServices();
+            builder.Services.AddWebServices(builder.Configuration);
+            
+            
             
             
             
@@ -590,6 +740,7 @@ namespace ECommerce.Web
             var ObjectOfDataSeeding = Scope.ServiceProvider.GetRequiredService<IDataSeeding>();
 
             await ObjectOfDataSeeding.DataSeedAsync();
+            await ObjectOfDataSeeding.IdentityDataSeedAsync();
 
             #endregion
 
@@ -613,6 +764,11 @@ namespace ECommerce.Web
 
             app.UseStaticFiles();
             // to serve static files like images, CSS, JavaScript
+
+            app.UseRouting();
+            app.UseAuthentication();
+            app.UseAuthorization();
+
 
             app.MapControllers();
             // connects the http routes to the controller actions 
@@ -916,6 +1072,41 @@ namespace Persistence.Data
 }
 
 
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Identity\StoreIdentityDbContext.cs ====================
+
+using DomainLayer.Models.IdentityModule;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Persistence.Identity
+{
+    public class StoreIdentityDbContext(DbContextOptions<StoreIdentityDbContext> options):IdentityDbContext<AppUser>(options)
+    {
+        //DbContextOptions<StoreIdentityDbContext> options ==> to set the connection string
+
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+            builder.Entity<AppUser>().ToTable("Users");
+            builder.Entity<Address>().ToTable("Addresses");
+            builder.Entity<IdentityRole>().ToTable("Roles");
+            builder.Entity<IdentityUserRole<string>>().ToTable("UserRoles");
+            builder.Ignore<IdentityUserClaim<string>>();
+            builder.Ignore<IdentityUserToken<string>>();
+            builder.Ignore<IdentityUserLogin<string>>();
+            builder.Ignore<IdentityRoleClaim<string>>();
+        }
+    }
+}
+
+
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Repositories\BasketRepository.cs ====================
 
 using DomainLayer.Contracts;
@@ -1098,14 +1289,21 @@ namespace Persistence
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\DataSeeding.cs ====================
 
 using DomainLayer.Contracts;
+using DomainLayer.Models.IdentityModule;
 using DomainLayer.Models.ProductModule;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Persistence.Data;
+using Persistence.Identity;
+using System.Linq.Expressions;
 using System.Text.Json;
 
 namespace Persistence
 {
-    public class DataSeeding(StoreDbContext dbContext) : IDataSeeding
+    public class DataSeeding(StoreDbContext dbContext 
+        , UserManager<AppUser> userManager 
+        , RoleManager<IdentityRole> roleManager
+        , StoreIdentityDbContext identityDbContext) : IDataSeeding
     {
         public async Task DataSeedAsync()
         {
@@ -1183,6 +1381,49 @@ namespace Persistence
                 Console.WriteLine(ex.Message);
             }
         }
+
+        public async Task IdentityDataSeedAsync()
+        {
+            try
+            {
+                if (!roleManager.Roles.Any())
+                {
+                    await roleManager.CreateAsync(new IdentityRole("Admin"));
+                    await roleManager.CreateAsync(new IdentityRole("SuperAdmin"));
+                }
+                if (!userManager.Users.Any())
+                {
+                    var User01 = new AppUser()
+                    {
+                        Email = "Mohamed@gmail.com",
+                        DisplayName = "Mohamed Tarek",
+                        PhoneNumber = "0123456789",
+                        UserName = "MohamedTarek"
+                    };
+
+                    var User02 = new AppUser()
+                    {
+                        Email = "Moh@gmail.com",
+                        DisplayName = "Moh Tak",
+                        PhoneNumber = "0144456789",
+                        UserName = "MohTk"
+                    };
+
+                    await userManager.CreateAsync(User01, "P@ssw0rd");
+                    await userManager.CreateAsync(User02, "P@ssw0rd");
+
+                    await userManager.AddToRoleAsync(User01, "Admin");
+                    await userManager.AddToRoleAsync(User02, "SuperAdmin");
+
+                    await identityDbContext.SaveChangesAsync();
+                }
+                
+            }
+            catch(Exception ex)
+            {
+
+            }
+        }
     }
 }
 
@@ -1190,10 +1431,13 @@ namespace Persistence
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\InfrastructureServiceRegisteration.cs ====================
 
 using DomainLayer.Contracts;
+using DomainLayer.Models.IdentityModule;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Persistence.Data;
+using Persistence.Identity;
 using Persistence.Repositories;
 using StackExchange.Redis;
 using System;
@@ -1223,6 +1467,15 @@ namespace Persistence
             {
                 return ConnectionMultiplexer.Connect(Configuration.GetConnectionString("RedisConnectionString"));
             });
+
+            services.AddDbContext<StoreIdentityDbContext>(Options =>
+            {
+                Options.UseSqlServer(Configuration.GetConnectionString("IdentityDefault"));
+            });
+
+            services.AddIdentityCore<AppUser>()
+                .AddRoles<IdentityRole>()
+                .AddEntityFrameworkStores<StoreIdentityDbContext>();
 
             return services;
         }
@@ -1313,11 +1566,9 @@ namespace Persistence
 }
 
 
-==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Presentation\Controllers\BasketController.cs ====================
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Presentation\Controllers\APIBaseController.cs ====================
 
 using Microsoft.AspNetCore.Mvc;
-using ServiceAbstraction;
-using Shared.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -1327,8 +1578,100 @@ using System.Threading.Tasks;
 namespace Presentation.Controllers
 {
     [ApiController]
-    [Route("api/[Controller]")]
-    public class BasketController(IServiceManager serviceManager): ControllerBase
+    [Route("api/{Controller}")]
+    public class APIBaseController : ControllerBase
+    {
+
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Presentation\Controllers\AuthenticationController.cs ====================
+
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using ServiceAbstraction;
+using Shared.DTOs;
+using Shared.DTOs.IdentityDTOs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Presentation.Controllers
+{
+    public class AuthenticationController(IServiceManager serviceManager) : APIBaseController
+    {
+        [HttpPost("Login")]
+        public async Task<ActionResult<UserDTO>> Login(LoginDTO loginDTO)
+        {
+            var User = await serviceManager.AuthenticationService.LoginAsync(loginDTO);
+            return Ok(User);
+
+        }
+        [HttpPost("Register")]
+        public async Task<ActionResult<UserDTO>> Register(RegisterDTO registerDTO)
+        {
+            var User = await serviceManager.AuthenticationService.RegisterAsync(registerDTO);
+            return Ok(User);
+
+        }
+
+        [HttpGet("CheckEmail")]
+        public async Task<ActionResult<bool>> CheckEmail(string email)
+        {
+            var Result = serviceManager.AuthenticationService.CheckEmail(email);
+            return Ok(Result);
+        }
+
+        [Authorize]
+        [HttpGet("CurrentUser")]
+        public async Task<ActionResult<UserDTO>> GetCurrentUser()
+        {
+            var Email = User.FindFirstValue(ClaimTypes.Email);
+            var AppUser =await serviceManager.AuthenticationService.GetCurrentUser(Email);
+            return Ok(AppUser);
+        }
+
+        [Authorize]
+        [HttpGet("Address")]
+        public async Task<ActionResult<AddressDTO>> GetCurrentAddress()
+        {
+            var email = User.FindFirstValue(ClaimTypes.Email);
+            var Address = await serviceManager.AuthenticationService.GetUserAddress(email);
+            return Ok(Address);
+        }
+
+        [Authorize]
+        [HttpPut]
+        public async Task<ActionResult<AddressDTO>> UpdateAddress(AddressDTO addressDTO)
+        {
+            var email = User.FindFirstValue(ClaimTypes.Email);
+            var Result = await serviceManager.AuthenticationService.UpdateUserAddress(email, addressDTO);
+            return Ok(Result);
+        }
+
+
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Presentation\Controllers\BasketController.cs ====================
+
+using Microsoft.AspNetCore.Mvc;
+using ServiceAbstraction;
+using Shared.DTOs.BasketModuleDTOs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Presentation.Controllers
+{
+    public class BasketController(IServiceManager serviceManager): APIBaseController
     {
         [HttpGet]
         public async Task<ActionResult<BasketDTO>> GetBasket(string key)
@@ -1359,6 +1702,7 @@ namespace Presentation.Controllers
 
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Presentation\Controllers\ProductsController.cs ====================
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using ServiceAbstraction;
@@ -1377,10 +1721,10 @@ namespace Presentation.Controllers
     // but what if we need to use other services too?
     // instead of injecting each service separately 
     // we can inject a service manager that contains all services
-    [ApiController]
-    [Route("api/[controller]")]
-    public class ProductsController(IServiceManager serviceManager) : ControllerBase
+    
+    public class ProductsController(IServiceManager serviceManager) : APIBaseController
     {
+        [Authorize(Roles ="Admin")]
         [HttpGet]
         public async Task<ActionResult<PaginatedResult<ProductDTO>>> GetAllProducts([FromQuery]ProductQueryParams queryParams)
         {
@@ -1440,7 +1784,7 @@ namespace Presentation.Controllers
 
 using AutoMapper;
 using DomainLayer.Models.BasketModule;
-using Shared.DTOs;
+using Shared.DTOs.BasketModuleDTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -1455,6 +1799,29 @@ namespace Service.MappingProfiles
         {
             CreateMap<CustomerBasket, BasketDTO>().ReverseMap();
             CreateMap<BasketItem, BasketItemDTO>().ReverseMap();
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\MappingProfiles\IdentityProfile.cs ====================
+
+using AutoMapper;
+using DomainLayer.Models.IdentityModule;
+using Shared.DTOs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Service.MappingProfiles
+{
+    internal class IdentityProfile:Profile
+    {
+        public IdentityProfile()
+        {
+            CreateMap<Address, AddressDTO>().ReverseMap();
         }
     }
 }
@@ -1719,6 +2086,166 @@ namespace Service
 }
 
 
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\AuthenticationService.cs ====================
+
+using AutoMapper;
+using DomainLayer.Exceptions;
+using DomainLayer.Models.IdentityModule;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+using ServiceAbstraction;
+using Shared.DTOs;
+using Shared.DTOs.IdentityDTOs;
+using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Security.Claims;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Service
+{
+    public class AuthenticationService(UserManager<AppUser> userManager, IConfiguration configuration , IMapper mapper) : IAuthenticationService
+    {
+        public async Task<bool> CheckEmail(string email)
+        {
+            var User = await userManager.FindByEmailAsync(email);
+            return User is not null;
+        }
+
+        public async Task<UserDTO> GetCurrentUser(string email)
+        {
+            var User = await userManager.FindByEmailAsync(email) ?? throw new UserNotFoundException(email);
+            return new UserDTO
+            {
+                DisplayName = User.DisplayName,
+                Email = User.Email,
+                Token = await GenerateTokenAsync(User)
+            };
+        }
+
+        public async Task<AddressDTO> GetUserAddress(string email)
+        {
+            var User = await userManager.Users.Include(U => U.Address)
+                .FirstOrDefaultAsync(U => U.Email == email) 
+                ?? throw new UserNotFoundException(email);
+
+            if (User.Address is not null)
+            {
+                return mapper.Map<Address, AddressDTO>(User.Address);
+            }
+            else
+                throw new AddressNotFoundException(User.DisplayName);
+        }
+
+        public async Task<AddressDTO> UpdateUserAddress(string email, AddressDTO addressDTO)
+        {
+            var User = await userManager.Users.Include(U => U.Address)
+                .FirstOrDefaultAsync(U => U.Email == email)
+                ?? throw new UserNotFoundException(email);
+
+            if (User.Address is not null)
+            {
+                User.Address.Street = addressDTO.Street;
+                User.Address.City = addressDTO.City;
+                User.Address.Country = addressDTO.Country;
+                User.Address.Fname = addressDTO.Fname;
+                User.Address.Lname = addressDTO.Lname;
+            }
+            else
+            {
+                User.Address = mapper.Map<AddressDTO, Address>(addressDTO);
+            }
+
+            await userManager.UpdateAsync(User);
+            return mapper.Map<AddressDTO>(User.Address);
+        }
+        public async Task<UserDTO> LoginAsync(LoginDTO loginDTO)
+        {
+            var User = await userManager.FindByEmailAsync(loginDTO.Email);
+            if (User is null) throw new UserNotFoundException(loginDTO.Email);
+
+            var TruePassword = await userManager.CheckPasswordAsync(User, loginDTO.Password);
+            if (TruePassword)
+            {
+                return new UserDTO
+                {
+                    DisplayName = User.DisplayName,
+                    Email = User.Email,
+                    Token = await GenerateTokenAsync(User)
+                };
+            }
+            else
+                throw new UnAuthorizedException();
+        }
+
+
+        public async Task<UserDTO> RegisterAsync(RegisterDTO RegDTO)
+        {
+            var User = new AppUser()
+            {
+                DisplayName = RegDTO.DisplayName,
+                UserName = RegDTO.UserName,
+                Email = RegDTO.Email,
+                PhoneNumber = RegDTO.PhoneNumber
+            };
+
+            var IsCreated = await userManager.CreateAsync(User, RegDTO.Password);
+            if (IsCreated.Succeeded)
+            {
+                return new UserDTO()
+                {
+                    DisplayName = RegDTO.DisplayName,
+                    Email = RegDTO.Email,
+                    Token = await GenerateTokenAsync(User)
+                };
+
+            }
+            else
+            {
+                var Errors = IsCreated.Errors.Select(E => E.Description).ToList();
+                throw new BadRequestException(Errors);
+            }
+
+        }
+
+
+        private async Task<string> GenerateTokenAsync(AppUser user)
+        {
+            var claims = new List<Claim>()
+            {
+                new Claim(ClaimTypes.Email , user.Email!),
+                new Claim(ClaimTypes.Name , user.UserName!),
+                new Claim(ClaimTypes.NameIdentifier , user.Id!),
+            };
+            var roles = await userManager.GetRolesAsync(user);
+
+            foreach(var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            var SecurityKey = configuration.GetSection("JWTOptions")["SecretKey"];
+            var Key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SecurityKey));
+            var Creds = new SigningCredentials(Key, SecurityAlgorithms.HmacSha256);
+
+            var Token = new JwtSecurityToken(
+                issuer: configuration["JWTOptions:Issuer"],
+                audience: configuration["JWTOptions:Audience"],
+                claims: claims,
+                expires: DateTime.Now.AddDays(1),
+                signingCredentials: Creds
+                );
+
+            return new JwtSecurityTokenHandler().WriteToken(Token);
+        }
+    }
+}
+
+
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\BasketService.cs ====================
 
 using AutoMapper;
@@ -1726,7 +2253,7 @@ using DomainLayer.Contracts;
 using DomainLayer.Exceptions;
 using DomainLayer.Models.BasketModule;
 using ServiceAbstraction;
-using Shared.DTOs;
+using Shared.DTOs.BasketModuleDTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -1737,13 +2264,13 @@ namespace Service
 {
     public class BasketService(IBasketRepository repository,IMapper mapper) : IBasketService
     {
-        public Task<BasketDTO> CreateOrUpdateBasket(BasketDTO basket)
+        public async Task<BasketDTO> CreateOrUpdateBasket(BasketDTO basket)
         {
             var CustomerBasket = mapper.Map<BasketDTO, CustomerBasket>(basket);
-            var IsCreated = repository.CreateOrUpdateBasketAsync(CustomerBasket);
+            var IsCreated = await repository.CreateOrUpdateBasketAsync(CustomerBasket);
             if (IsCreated is not null)
             {
-                return GetBasket(basket.Id);
+                return await GetBasket(basket.Id);
             }
             else
                 throw new Exception("Basket Does not exist");
@@ -1855,6 +2382,7 @@ namespace Service
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="16.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.27" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
   </ItemGroup>
 
@@ -1870,6 +2398,9 @@ namespace Service
 
 using AutoMapper;
 using DomainLayer.Contracts;
+using DomainLayer.Models.IdentityModule;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
 using ServiceAbstraction;
 using System;
 using System.Collections.Generic;
@@ -1879,24 +2410,50 @@ using System.Threading.Tasks;
 
 namespace Service
 {
-    public class ServiceManager(IUnitOfWork unitOfWork, IMapper mapper , IBasketRepository basketRepository) : IServiceManager
+    public class ServiceManager(IUnitOfWork unitOfWork, IMapper mapper , IBasketRepository basketRepository , UserManager<AppUser> userManager , IConfiguration configuration) : IServiceManager
     {
         // implement using lazy loading
         private readonly Lazy<IProductService> _productService
             = new Lazy<IProductService>(() => new ProductService(unitOfWork, mapper));
         private readonly Lazy<IBasketService> _basketService
             = new Lazy<IBasketService>(() => new BasketService(basketRepository, mapper));
+        private readonly Lazy<IAuthenticationService> _authService
+            = new Lazy<IAuthenticationService>(() => new AuthenticationService(userManager,configuration,mapper));
 
         public IProductService ProductService => _productService.Value;
-
+        public IAuthenticationService AuthenticationService => _authService.Value;
         public IBasketService BasketService => _basketService.Value;
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\ServiceAbstraction\IAuthenticationService.cs ====================
+
+using Shared.DTOs;
+using Shared.DTOs.IdentityDTOs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ServiceAbstraction
+{
+    public interface IAuthenticationService
+    {
+        Task<UserDTO> LoginAsync(LoginDTO loginDTO);
+        Task<UserDTO> RegisterAsync(RegisterDTO RegDTO);
+        Task<bool> CheckEmail(string email);
+        Task<AddressDTO> GetUserAddress(string email);
+        Task<AddressDTO> UpdateUserAddress(string email,AddressDTO addressDTO);
+        Task<UserDTO> GetCurrentUser(string email);
     }
 }
 
 
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\ServiceAbstraction\IBasketService.cs ====================
 
-using Shared.DTOs;
+using Shared.DTOs.BasketModuleDTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -1951,6 +2508,7 @@ namespace ServiceAbstraction
     {
         public IProductService ProductService { get; }
         public IBasketService BasketService { get; }
+        public IAuthenticationService AuthenticationService { get; }
     }
 }
 
@@ -1970,6 +2528,113 @@ namespace ServiceAbstraction
   </ItemGroup>
 
 </Project>
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\BasketModuleDTOs\BasketDTO.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Shared.DTOs.BasketModuleDTOs
+{
+    public class BasketDTO
+    {
+        public string Id { get; set; }
+        public ICollection<BasketItemDTO> Items { get; set; } = [];
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\BasketModuleDTOs\BasketItemDTO.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Shared.DTOs.BasketModuleDTOs
+{
+    public class BasketItemDTO
+    {
+        public int Id { get; set; }
+        [Range(1,100)]
+        public int Quantity { get; set; }
+        public string PictureUrl { get; set; } = default!;
+        public string ProductName { get; set; } = default!;
+        [Range(1,double.MaxValue)]
+        public decimal Price { get; set; }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\IdentityDTOs\LoginDTO.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Shared.DTOs.IdentityDTOs
+{
+    public class LoginDTO
+    {
+        [EmailAddress]
+        public string Email { get; set; } = default!;
+        public string Password { get; set; } = default!;
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\IdentityDTOs\RegisterDTO.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Shared.DTOs.IdentityDTOs
+{
+    public class RegisterDTO
+    {
+
+        [EmailAddress]
+        public string Email { get; set; } = default!;
+        public string Password { get; set; } = default!;
+        public string UserName { get; set; } = default!;
+        public string DisplayName { get; set; } = default!;
+        [Phone]
+        public string PhoneNumber { get; set; } = default!;
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\IdentityDTOs\UserDTO.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Shared.DTOs.IdentityDTOs
+{
+    public class UserDTO
+    {
+        public string Email { get; set; } = default!;
+        public string Token { get; set; } = default!;
+        public string DisplayName { get; set; } = default!;
+    }
+}
 
 
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\ProductModuleDTOs\BrandDTO.cs ====================
@@ -2031,7 +2696,7 @@ namespace Shared.DTOs.ProductModuleDTOs
 }
 
 
-==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\BasketDTO.cs ====================
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\AddressDTO.cs ====================
 
 using System;
 using System.Collections.Generic;
@@ -2041,34 +2706,13 @@ using System.Threading.Tasks;
 
 namespace Shared.DTOs
 {
-    public class BasketDTO
+    public class AddressDTO
     {
-        public string Id { get; set; }
-        public ICollection<BasketItemDTO> Items { get; set; } = [];
-    }
-}
-
-
-==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\BasketItemDTO.cs ====================
-
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Shared.DTOs
-{
-    public class BasketItemDTO
-    {
-        public int Id { get; set; }
-        [Range(1,100)]
-        public int Quantity { get; set; }
-        public string PictureUrl { get; set; } = default!;
-        public string ProductName { get; set; } = default!;
-        [Range(1,double.MaxValue)]
-        public decimal Price { get; set; }
+        public string City { get; set; } = default!;
+        public string Country { get; set; } = default!;
+        public string Street { get; set; } = default!;
+        public string Fname { get; set; } = default!;
+        public string Lname { get; set; } = default!;
     }
 }
 
@@ -2087,6 +2731,7 @@ namespace Shared.ErrorModels
     {
         public int StatusCode { get; set; }
         public string ErrorMessage { get; set; } = default!;
+        public List<string>? Errors { get; set; }
     }
 }
 
@@ -2222,9 +2867,5 @@ namespace Shared
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Folder Include="DTOs\BasketModuleDTOs\" />
-  </ItemGroup>
 
 </Project>

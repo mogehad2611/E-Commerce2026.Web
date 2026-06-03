@@ -14,13 +14,13 @@ namespace Service
 {
     public class BasketService(IBasketRepository repository,IMapper mapper) : IBasketService
     {
-        public Task<BasketDTO> CreateOrUpdateBasket(BasketDTO basket)
+        public async Task<BasketDTO> CreateOrUpdateBasket(BasketDTO basket)
         {
             var CustomerBasket = mapper.Map<BasketDTO, CustomerBasket>(basket);
-            var IsCreated = repository.CreateOrUpdateBasketAsync(CustomerBasket);
+            var IsCreated = await repository.CreateOrUpdateBasketAsync(CustomerBasket);
             if (IsCreated is not null)
             {
-                return GetBasket(basket.Id);
+                return await GetBasket(basket.Id);
             }
             else
                 throw new Exception("Basket Does not exist");

@@ -25,7 +25,6 @@ namespace Service
             var User = await userManager.FindByEmailAsync(email);
             return User is not null;
         }
-
         public async Task<UserDTO> GetCurrentUser(string email)
         {
             var User = await userManager.FindByEmailAsync(email) ?? throw new UserNotFoundException(email);
@@ -36,28 +35,26 @@ namespace Service
                 Token = await GenerateTokenAsync(User)
             };
         }
-
         public async Task<AddressDTO> GetUserAddress(string email)
         {
             var User = await userManager.Users.Include(U => U.Address)
                 .FirstOrDefaultAsync(U => U.Email == email) 
                 ?? throw new UserNotFoundException(email);
 
-            if (User is not null)
+            if (User.Address is not null)
             {
                 return mapper.Map<Address, AddressDTO>(User.Address);
             }
             else
                 throw new AddressNotFoundException(User.DisplayName);
         }
-
         public async Task<AddressDTO> UpdateUserAddress(string email, AddressDTO addressDTO)
         {
             var User = await userManager.Users.Include(U => U.Address)
                 .FirstOrDefaultAsync(U => U.Email == email)
                 ?? throw new UserNotFoundException(email);
 
-            if (User is not null)
+            if (User.Address is not null)
             {
                 User.Address.Street = addressDTO.Street;
                 User.Address.City = addressDTO.City;
@@ -91,8 +88,6 @@ namespace Service
             else
                 throw new UnAuthorizedException();
         }
-
-
         public async Task<UserDTO> RegisterAsync(RegisterDTO RegDTO)
         {
             var User = new AppUser()
@@ -121,8 +116,6 @@ namespace Service
             }
 
         }
-
-
         private async Task<string> GenerateTokenAsync(AppUser user)
         {
             var claims = new List<Claim>()
@@ -135,7 +128,7 @@ namespace Service
 
             foreach(var role in roles)
             {
-                new Claim(ClaimTypes.Role, role);
+                claims.Add(new Claim(ClaimTypes.Role, role));
             }
 
             var SecurityKey = configuration.GetSection("JWTOptions")["SecretKey"];

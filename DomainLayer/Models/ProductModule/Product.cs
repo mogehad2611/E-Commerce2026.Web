@@ -8,7 +8,7 @@ namespace DomainLayer.Models.ProductModule
 {
     public class Product:BaseEntity<int>
     {
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
         public string Description { get; set; }
         public string PictureUrl { get; set; }
         public decimal Price { get; set; }
