@@ -32,7 +32,9 @@ namespace ECommerce.Web
             builder.Services.AddSwaggerServices();
             builder.Services.AddInfrastructureServices(builder.Configuration);
             builder.Services.AddServiceRegister();
-            builder.Services.AddWebServices();
+            builder.Services.AddWebServices(builder.Configuration);
+            
+            
             
             
             
@@ -72,6 +74,11 @@ namespace ECommerce.Web
 
             app.UseStaticFiles();
             // to serve static files like images, CSS, JavaScript
+
+            app.UseRouting();
+            app.UseAuthentication();
+            app.UseAuthorization();
+
 
             app.MapControllers();
             // connects the http routes to the controller actions 

@@ -41,7 +41,7 @@ namespace E_Commerce2026.CustomMiddleWares
             {
                 NotFoundException => StatusCodes.Status404NotFound,
                 UnAuthorizedException => StatusCodes.Status401Unauthorized,
-                BadRequestException badRequestException => GetBadRequestErrors(badRequestException, response)
+                BadRequestException badRequestException => GetBadRequestErrors(badRequestException, response),
                 _ => StatusCodes.Status500InternalServerError
             };
 

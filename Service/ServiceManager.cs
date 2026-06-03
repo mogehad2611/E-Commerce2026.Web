@@ -2,6 +2,7 @@
 using DomainLayer.Contracts;
 using DomainLayer.Models.IdentityModule;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
 using ServiceAbstraction;
 using System;
 using System.Collections.Generic;
@@ -11,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Service
 {
-    public class ServiceManager(IUnitOfWork unitOfWork, IMapper mapper , IBasketRepository basketRepository , UserManager<AppUser> userManager) : IServiceManager
+    public class ServiceManager(IUnitOfWork unitOfWork, IMapper mapper , IBasketRepository basketRepository , UserManager<AppUser> userManager , IConfiguration configuration) : IServiceManager
     {
         // implement using lazy loading
         private readonly Lazy<IProductService> _productService
@@ -19,7 +20,7 @@ namespace Service
         private readonly Lazy<IBasketService> _basketService
             = new Lazy<IBasketService>(() => new BasketService(basketRepository, mapper));
         private readonly Lazy<IAuthenticationService> _authService
-            = new Lazy<IAuthenticationService>(() => new AuthenticationService(userManager));
+            = new Lazy<IAuthenticationService>(() => new AuthenticationService(userManager,configuration,mapper));
 
         public IProductService ProductService => _productService.Value;
         public IAuthenticationService AuthenticationService => _authService.Value;
