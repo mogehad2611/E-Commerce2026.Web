@@ -16,9 +16,34 @@ namespace E_Commerce2026.Extentions
             // each action in the controller is
             // considered an endpoint
 
-            Services.AddSwaggerGen();
-            // convert discovered metadata [endpoints]
-            // into OpenAPI specification [JSON]
+            Services.AddSwaggerGen(options =>
+            {
+                options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                {
+                    Name = "Authorization",
+                    Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                    Description = "Enter JWT Token"
+                });
+
+                options.AddSecurityRequirement(
+                    new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+                    {
+            {
+                new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                {
+                    Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                    {
+                        Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                Array.Empty<string>()
+            }
+                    });
+            });
             return Services;
         }
 

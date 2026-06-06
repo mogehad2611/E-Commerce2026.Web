@@ -1,4 +1,5 @@
-﻿using DomainLayer.Models.ProductModule;
+﻿using DomainLayer.Models.OrderModule;
+using DomainLayer.Models.ProductModule;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -18,6 +19,7 @@ namespace Persistence.Data
         public DbSet<Product> Products { get; set; }
         public DbSet<ProductType> ProductTypes { get; set; }
         public DbSet<ProductBrand> ProductBrands { get; set; }
+        public DbSet<DeliveryMethod> DeliveryMethods { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AssemblyReference).Assembly);

@@ -11,7 +11,7 @@ namespace Presentation.Controllers
 {
     public class BasketController(IServiceManager serviceManager): APIBaseController
     {
-        [HttpGet]
+        [HttpGet("{key}")]
         public async Task<ActionResult<BasketDTO>> GetBasket(string key)
         {
             var basket = await serviceManager.BasketService.GetBasket(key);

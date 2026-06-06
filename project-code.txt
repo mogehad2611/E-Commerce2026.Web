@@ -164,6 +164,22 @@ namespace DomainLayer.Exceptions
 }
 
 
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Exceptions\DeliveryMethodNotFoundException.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Exceptions
+{
+    public class DeliveryMethodNotFoundException(int id):Exception($"Delivery Method with Id {id} is not found")
+    {
+    }
+}
+
+
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Exceptions\NotFoundException.cs ====================
 
 using System;
@@ -303,6 +319,170 @@ namespace DomainLayer.Models.IdentityModule
     {
         public string DisplayName { get; set; } = default!;
         public Address? Address { get; set; }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\OrderModule\DeliveryMethod.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Models.OrderModule
+{
+    public class DeliveryMethod : BaseEntity<int>
+    {
+        public string ShortName { get; set; } = default!;
+        public string Description { get; set; } = default!;
+        public string DeliveryTime { get; set; } = default!;
+        public decimal Price { get; set; }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\OrderModule\Order.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Models.OrderModule
+{
+    public class Order:BaseEntity<Guid>
+    {
+        public Order()
+        {
+        }
+
+        public Order(string userEmail, OrderAddress orderAddress, DeliveryMethod deliveryMethod, decimal subTotal, ICollection<OrderItem> items)
+        {
+            UserEmail = userEmail;
+            OrderAddress = orderAddress;
+            DeliveryMethod = deliveryMethod;
+            SubTotal = subTotal;
+            Items = items;
+        }
+
+        public string UserEmail { get; set; } = default!;
+        public OrderAddress OrderAddress { get; set; } = default!;
+        public DeliveryMethod DeliveryMethod { get; set; } = default!;
+        public decimal SubTotal { get; set; }
+        public ICollection<OrderItem> Items { get; set; } = [];
+
+
+        public int DeliveryMethodId { get; set; }
+        public OrderStatus OrderStatus { get; set; }
+        public DateTimeOffset OrderDate { get; set; } = DateTimeOffset.Now;
+
+        /*
+        [NotMapped]
+        public decimal Total { get => SubTotal + DeliveryMethod.Price; }
+        */
+
+        public decimal GetTotal() => SubTotal + DeliveryMethod.Price;
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\OrderModule\OrderAddress.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Models.OrderModule
+{
+    public class OrderAddress
+    {
+        public string FirstName { get; set; } = default!;
+        public string LastName { get; set; } = default!;
+        public string City { get; set; } = default!;
+        public string Country { get; set; } = default!;
+        public string Street { get; set; } = default!;
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\OrderModule\OrderItem.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Models.OrderModule
+{
+    public class OrderItem : BaseEntity<int>
+    {
+        public OrderItem()
+        {
+            
+        }
+        public OrderItem(int quantity, decimal price, ProductItemOrdered product)
+        {
+            Quantity = quantity;
+            Price = price;
+            Product = product;
+        }
+
+        public int Quantity { get; set; }
+        public decimal Price { get; set; }
+        public ProductItemOrdered Product { get; set; } = default!;
+
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\OrderModule\OrderStatus.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Models.OrderModule
+{
+    public enum OrderStatus
+    {
+        Pending = 0,
+        PaymentReceived = 1,
+        PaymentFailed = 2
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Models\OrderModule\ProductItemOrdered.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Models.OrderModule
+{
+    public class ProductItemOrdered
+    {
+        public int ProductId { get; set; }
+        public string PictureUrl { get; set; } = default!;
+        public string ProductName { get; set; } = default!;
+
+        public ProductItemOrdered(int productId, string pictureUrl, string productName)
+        {
+            ProductId = productId;
+            PictureUrl = pictureUrl;
+            ProductName = productName;
+        }
     }
 }
 
@@ -495,9 +675,34 @@ namespace E_Commerce2026.Extentions
             // each action in the controller is
             // considered an endpoint
 
-            Services.AddSwaggerGen();
-            // convert discovered metadata [endpoints]
-            // into OpenAPI specification [JSON]
+            Services.AddSwaggerGen(options =>
+            {
+                options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                {
+                    Name = "Authorization",
+                    Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                    Description = "Enter JWT Token"
+                });
+
+                options.AddSecurityRequirement(
+                    new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+                    {
+            {
+                new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                {
+                    Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                    {
+                        Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                Array.Empty<string>()
+            }
+                    });
+            });
             return Services;
         }
 
@@ -782,6 +987,107 @@ namespace ECommerce.Web
 }
 
 
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Data\Configurations\DeliveryMethodsConfigurations.cs ====================
+
+using DomainLayer.Models.OrderModule;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Persistence.Data.Configurations
+{
+    internal class DeliveryMethodsConfigurations : IEntityTypeConfiguration<DeliveryMethod>
+    {
+        public void Configure(EntityTypeBuilder<DeliveryMethod> builder)
+        {
+            builder.ToTable("DeliveryMethods");
+
+            builder.Property(D => D.Price)
+                .HasColumnType("decimal(8,2)");
+
+            builder.Property(D => D.ShortName)
+                .HasColumnType("varchar")
+                .HasMaxLength(50);
+
+            builder.Property(D => D.Description)
+                .HasColumnType("varchar")
+                .HasMaxLength(100);
+
+            builder.Property(D => D.DeliveryTime)
+                .HasColumnType("varchar")
+                .HasMaxLength(50);
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Data\Configurations\OrderConfigurations.cs ====================
+
+using DomainLayer.Models.OrderModule;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Persistence.Data.Configurations
+{
+    internal class OrderConfigurations : IEntityTypeConfiguration<Order>
+    {
+        public void Configure(EntityTypeBuilder<Order> builder)
+        {
+            builder.ToTable("Orders");
+
+            builder.Property(O => O.SubTotal)
+                .HasColumnType("decimal(8,2)");
+
+            builder.HasMany(O => O.Items)
+                .WithOne();
+
+            builder.HasOne(O => O.DeliveryMethod)
+                .WithMany()
+                .HasForeignKey(O => O.DeliveryMethodId);
+
+            builder.OwnsOne(O => O.OrderAddress);
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Data\Configurations\OrderItemConfigurations.cs ====================
+
+using DomainLayer.Models.OrderModule;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Persistence.Data.Configurations
+{
+    internal class OrderItemConfigurations : IEntityTypeConfiguration<OrderItem>
+    {
+        public void Configure(EntityTypeBuilder<OrderItem> builder)
+        {
+            builder.ToTable("OrderItems");
+
+            builder.Property(OI => OI.Price)
+                .HasColumnType("decimal(8,2)");
+
+            builder.OwnsOne(OI => OI.Product);
+        }
+    }
+}
+
+
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Data\Configurations\ProductConfigurations.cs ====================
 
 using DomainLayer.Models.ProductModule;
@@ -844,28 +1150,24 @@ namespace Persistence.Data.Configurations
 
 [
   {
-    "Id": 1,
     "ShortName": "UPS1",
     "Description": "Fastest delivery time",
     "DeliveryTime": "1-2 Days",
     "Price": 10
   },
   {
-    "Id": 2,
     "ShortName": "UPS2",
     "Description": "Get it within 5 days",
     "DeliveryTime": "2-5 Days",
     "Price": 5
   },
   {
-    "Id": 3,
     "ShortName": "UPS3",
     "Description": "Slower but cheap",
     "DeliveryTime": "5-10 Days",
     "Price": 2
   },
   {
-    "Id": 4,
     "ShortName": "FREE",
     "Description": "Free! You get what you pay for",
     "DeliveryTime": "1-2 Weeks",
@@ -1044,6 +1346,7 @@ namespace Persistence.Data.Configurations
 
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Data\StoreDbContext.cs ====================
 
+using DomainLayer.Models.OrderModule;
 using DomainLayer.Models.ProductModule;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -1064,6 +1367,7 @@ namespace Persistence.Data
         public DbSet<Product> Products { get; set; }
         public DbSet<ProductType> ProductTypes { get; set; }
         public DbSet<ProductBrand> ProductBrands { get; set; }
+        public DbSet<DeliveryMethod> DeliveryMethods { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AssemblyReference).Assembly);
@@ -1290,6 +1594,7 @@ namespace Persistence
 
 using DomainLayer.Contracts;
 using DomainLayer.Models.IdentityModule;
+using DomainLayer.Models.OrderModule;
 using DomainLayer.Models.ProductModule;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -1355,7 +1660,7 @@ namespace Persistence
 
                 #endregion
 
-                #region Products
+               
 
                 if (!dbContext.Products.Any())
                 {
@@ -1373,7 +1678,25 @@ namespace Persistence
                     }
                 }
 
-                #endregion
+                if (!dbContext.Set<DeliveryMethod>().Any())
+                {
+                    // Read Data
+                    using var DeliveryMethodDataStream =
+                        File.OpenRead(@"..\Persistence\Data\DataSeed\delivery.json");
+
+                    // Convert To C# Objects
+                    var DeliveryMethods = await JsonSerializer.DeserializeAsync<List<DeliveryMethod>>(DeliveryMethodDataStream);
+
+                    // Save To Db
+                    if (DeliveryMethods is not null && DeliveryMethods.Any())
+                    {
+                        await dbContext.Set<DeliveryMethod>().AddRangeAsync(entities: DeliveryMethods);
+                        await dbContext.SaveChangesAsync();
+                    }
+                }
+
+
+
             }
             catch (Exception ex)
             {
@@ -1572,16 +1895,17 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Presentation.Controllers
 {
     [ApiController]
-    [Route("api/{Controller}")]
-    public class APIBaseController : ControllerBase
+    [Route("api/[Controller]")]
+    public abstract class APIBaseController : ControllerBase
     {
-
+        protected string GetEmailFromToken() => User.FindFirstValue(ClaimTypes.Email)!;
     }
 }
 
@@ -1622,7 +1946,7 @@ namespace Presentation.Controllers
         [HttpGet("CheckEmail")]
         public async Task<ActionResult<bool>> CheckEmail(string email)
         {
-            var Result = serviceManager.AuthenticationService.CheckEmail(email);
+            var Result = await serviceManager.AuthenticationService.CheckEmail(email);
             return Ok(Result);
         }
 
@@ -1673,7 +1997,7 @@ namespace Presentation.Controllers
 {
     public class BasketController(IServiceManager serviceManager): APIBaseController
     {
-        [HttpGet]
+        [HttpGet("{key}")]
         public async Task<ActionResult<BasketDTO>> GetBasket(string key)
         {
             var basket = await serviceManager.BasketService.GetBasket(key);
@@ -1695,6 +2019,63 @@ namespace Presentation.Controllers
         {
             var result = await serviceManager.BasketService.DeleteBasket(key);
             return Ok(result);
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Presentation\Controllers\OrdersController.cs ====================
+
+using DomainLayer.Models.OrderModule;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using ServiceAbstraction;
+using Shared.DTOs.OrderDTOs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Presentation.Controllers
+{
+    [Authorize]
+    public class OrdersController(IServiceManager serviceManager) : APIBaseController
+    {
+        [Authorize]
+        [HttpPost]
+        public async Task<ActionResult<OrderToReturnDTO>> CreateOrder(OrderDTO orderDTO)
+        {
+            var Email = GetEmailFromToken();
+            var Order = await serviceManager.OrderService.CreateOrder(orderDTO, Email);
+            return Ok(Order);
+        }
+        [AllowAnonymous]
+        [HttpGet("DeliveryMethods")] 
+        public async Task<ActionResult<IEnumerable<DeliveryMethodDto>>> GetDeliveryMethods()
+        {
+            var DeliveryMethods = await serviceManager.OrderService.GetDeliveryMethodsAsync();
+
+            return Ok(DeliveryMethods);
+        }
+
+        [Authorize]
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<OrderToReturnDTO>>> GetAllOrders()
+        {
+            var Orders = await serviceManager.OrderService
+                .GetAllOrdersAsync(Email: GetEmailFromToken());
+
+            return Ok(Orders);
+        }
+
+        [Authorize]
+        [HttpGet("{id:guid}")]
+        public async Task<ActionResult<OrderToReturnDTO>> GetOrderById(Guid id)
+        {
+            var Order = await serviceManager.OrderService.GetOrderByIdAsync(Id: id);
+
+            return Ok(Order);
         }
     }
 }
@@ -1770,6 +2151,7 @@ namespace Presentation.Controllers
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DomainLayer\DomainLayer.csproj" />
     <ProjectReference Include="..\ServiceAbstraction\ServiceAbstraction.csproj" />
   </ItemGroup>
   <ItemGroup>
@@ -1822,6 +2204,91 @@ namespace Service.MappingProfiles
         public IdentityProfile()
         {
             CreateMap<Address, AddressDTO>().ReverseMap();
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\MappingProfiles\OrderItemPictureUrlResolver.cs ====================
+
+using AutoMapper;
+using DomainLayer.Models.OrderModule;
+using Microsoft.Extensions.Configuration;
+using Shared.DTOs.OrderDTOs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Service.MappingProfiles
+{
+    class OrderItemPictureUrlResolver : IValueResolver<OrderItem, OrderItemDTO, string>
+    {
+        private readonly IConfiguration _configuration;
+
+        public OrderItemPictureUrlResolver(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
+
+        public string Resolve(OrderItem source, OrderItemDTO destination, string destMember, ResolutionContext context)
+        {
+            if (string.IsNullOrEmpty(source.Product.PictureUrl))
+                return string.Empty;
+
+            var Url = $"{_configuration.GetSection("Urls")["BaseUrl"]}{source.Product.PictureUrl}";
+            return Url;
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\MappingProfiles\OrderProfile.cs ====================
+
+using AutoMapper;
+using DomainLayer.Models.OrderModule;
+using Shared.DTOs;
+using Shared.DTOs.OrderDTOs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Service.MappingProfiles
+{
+    public class OrderProfile : Profile
+    {
+        public OrderProfile()
+        {
+            CreateMap<AddressDTO, OrderAddress>().ReverseMap();
+
+            
+            CreateMap<Order, OrderDTO>()
+                .ForMember(D => D.DeliveryMethod
+                , O => 
+                O.MapFrom(S => S.DeliveryMethod.ShortName));
+
+            
+            CreateMap<OrderItem, OrderItemDTO>()
+                .ForMember(D => D.ProductName
+                , O =>
+                O.MapFrom(S => S.Product.ProductName))
+                .ForMember(D => D.PictureUrl
+                , O =>
+                O.MapFrom<OrderItemPictureUrlResolver>());
+
+            CreateMap<Order, OrderToReturnDTO>()
+                .ForMember(D => D.DeliveryMethod,
+        O => O.MapFrom(S => S.DeliveryMethod.ShortName))
+                .ForMember(D => D.OrderStatus,
+        O => O.MapFrom(S => S.OrderStatus.ToString()))
+                .ForMember(D => D.Total,
+        O => O.MapFrom(S => S.GetTotal()));
+
+
+            CreateMap<DeliveryMethod, DeliveryMethodDto>().ReverseMap();
         }
     }
 }
@@ -1955,6 +2422,34 @@ namespace Service.Specifications
             Skip = (PageIndex-1)*pageSize;
         }
 
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\Specifications\OrderSpecifications.cs ====================
+
+using DomainLayer.Models.OrderModule;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Service.Specifications
+{
+    internal class OrderSpecifications:BaseSpecifications<Order,Guid>
+    {
+        public OrderSpecifications(string email):base(O=>O.UserEmail==email)
+        {
+            AddInclude(O => O.DeliveryMethod);
+            AddInclude(O => O.Items);
+            AddOrderByDesc(O => O.OrderDate);
+        }
+        public OrderSpecifications(Guid id) : base(O => O.Id == id)
+        {
+            AddInclude(O => O.DeliveryMethod);
+            AddInclude(O => O.Items);
+        }
     }
 }
 
@@ -2115,7 +2610,6 @@ namespace Service
             var User = await userManager.FindByEmailAsync(email);
             return User is not null;
         }
-
         public async Task<UserDTO> GetCurrentUser(string email)
         {
             var User = await userManager.FindByEmailAsync(email) ?? throw new UserNotFoundException(email);
@@ -2126,7 +2620,6 @@ namespace Service
                 Token = await GenerateTokenAsync(User)
             };
         }
-
         public async Task<AddressDTO> GetUserAddress(string email)
         {
             var User = await userManager.Users.Include(U => U.Address)
@@ -2140,7 +2633,6 @@ namespace Service
             else
                 throw new AddressNotFoundException(User.DisplayName);
         }
-
         public async Task<AddressDTO> UpdateUserAddress(string email, AddressDTO addressDTO)
         {
             var User = await userManager.Users.Include(U => U.Address)
@@ -2152,8 +2644,8 @@ namespace Service
                 User.Address.Street = addressDTO.Street;
                 User.Address.City = addressDTO.City;
                 User.Address.Country = addressDTO.Country;
-                User.Address.Fname = addressDTO.Fname;
-                User.Address.Lname = addressDTO.Lname;
+                User.Address.Fname = addressDTO.FirstName;
+                User.Address.Lname = addressDTO.LastName;
             }
             else
             {
@@ -2181,8 +2673,6 @@ namespace Service
             else
                 throw new UnAuthorizedException();
         }
-
-
         public async Task<UserDTO> RegisterAsync(RegisterDTO RegDTO)
         {
             var User = new AppUser()
@@ -2211,8 +2701,6 @@ namespace Service
             }
 
         }
-
-
         private async Task<string> GenerateTokenAsync(AppUser user)
         {
             var claims = new List<Claim>()
@@ -2290,6 +2778,102 @@ namespace Service
             }
             else
                 throw new BasketNotFoundException(key);
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\OrderService.cs ====================
+
+using AutoMapper;
+using DomainLayer.Contracts;
+using DomainLayer.Exceptions;
+using DomainLayer.Models.OrderModule;
+using DomainLayer.Models.ProductModule;
+using Service.Specifications;
+using ServiceAbstraction;
+using Shared.DTOs;
+using Shared.DTOs.OrderDTOs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Service
+{
+    public class OrderService(IMapper mapper, IBasketRepository basketRepository, IUnitOfWork unitOfWork) : IOrderService
+    {
+        public async Task<OrderToReturnDTO> CreateOrder(OrderDTO orderDTO, string email)
+        {
+            var OrderAddress = mapper.Map<AddressDTO, OrderAddress>(orderDTO.Address);
+
+            var Basket = await basketRepository.GetCustomerBasketAsyn(orderDTO.BasketId) 
+                ?? throw new BasketNotFoundException(orderDTO.BasketId);
+
+            List<OrderItem> orderItems = [];
+            var ProductRepo = unitOfWork.GetRepository<Product, int>();
+
+            foreach(var item in Basket.Items)
+            {
+                var Product = ProductRepo.GetByIdAsync(item.Id)
+                    ?? throw new ProductNotFoundException(item.Id);
+
+                var ProductItemOrdered =
+                    new ProductItemOrdered(Product.Result!.Id, Product.Result.PictureUrl, Product.Result.Name);
+
+                var OrderItem =
+                    new OrderItem(item.Quantity, Product.Result.Price, ProductItemOrdered);
+
+                orderItems.Add(OrderItem);
+            }
+
+            var DeliveryMethod =
+                await unitOfWork.GetRepository<DeliveryMethod, int>()
+                .GetByIdAsync(orderDTO.DeliveryMethod) 
+                ?? throw new DeliveryMethodNotFoundException(orderDTO.DeliveryMethod);
+
+            var Subtotal = orderItems.Sum(I => I.Quantity * I.Price);
+
+            var Order = new Order(email, OrderAddress, DeliveryMethod, Subtotal, orderItems);
+
+            await unitOfWork.GetRepository<Order, Guid>().AddAsync(Order);
+            await unitOfWork.SaveChangesAsync();
+
+            return mapper.Map<Order, OrderToReturnDTO>(Order);
+        }
+
+
+        public async Task<IEnumerable<OrderToReturnDTO>> GetAllOrdersAsync(string Email)
+        {
+            var Spec = new OrderSpecifications(Email);
+
+            var Orders = await unitOfWork
+                .GetRepository<Order, Guid>()
+                .GetAllAsync(specifications: Spec);
+
+            return mapper.Map<IEnumerable<Order>, IEnumerable<OrderToReturnDTO>>(Orders);
+        }
+        
+
+        public async Task<IEnumerable<DeliveryMethodDto>> GetDeliveryMethodsAsync()
+        {
+            var DeliveryMethods = await unitOfWork
+                .GetRepository<DeliveryMethod, int>()
+                .GetAllAsync();
+
+            return mapper.Map<IEnumerable<DeliveryMethod>, IEnumerable<DeliveryMethodDto>>(DeliveryMethods);
+        }
+
+        public async Task<OrderToReturnDTO> GetOrderByIdAsync(Guid Id)
+        {
+            var Spec = new OrderSpecifications(Id);
+
+            var Order = await unitOfWork
+                .GetRepository<Order, Guid>()
+                .GetByIdAsync(specifications: Spec);
+
+            return mapper.Map<Order, OrderToReturnDTO>(Order);
         }
     }
 }
@@ -2415,14 +2999,20 @@ namespace Service
         // implement using lazy loading
         private readonly Lazy<IProductService> _productService
             = new Lazy<IProductService>(() => new ProductService(unitOfWork, mapper));
+
         private readonly Lazy<IBasketService> _basketService
             = new Lazy<IBasketService>(() => new BasketService(basketRepository, mapper));
+
         private readonly Lazy<IAuthenticationService> _authService
             = new Lazy<IAuthenticationService>(() => new AuthenticationService(userManager,configuration,mapper));
+
+        private readonly Lazy<IOrderService> orderService
+            = new Lazy<IOrderService>(() => new OrderService(mapper, basketRepository, unitOfWork));
 
         public IProductService ProductService => _productService.Value;
         public IAuthenticationService AuthenticationService => _authService.Value;
         public IBasketService BasketService => _basketService.Value;
+        public IOrderService OrderService => orderService.Value;
     }
 }
 
@@ -2471,6 +3061,34 @@ namespace ServiceAbstraction
 }
 
 
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\ServiceAbstraction\IOrderService.cs ====================
+
+using DomainLayer.Models.OrderModule;
+using Shared.DTOs.OrderDTOs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ServiceAbstraction
+{
+    public interface IOrderService
+    {
+        Task<OrderToReturnDTO> CreateOrder(OrderDTO orderDTO, string email);
+
+        // Get Delivery Methods
+        Task<IEnumerable<DeliveryMethodDto>> GetDeliveryMethodsAsync();
+
+        // Get All Orders
+        Task<IEnumerable<OrderToReturnDTO>> GetAllOrdersAsync(string Email);
+
+        // Get Order By Id
+        Task<OrderToReturnDTO> GetOrderByIdAsync(Guid Id);
+    }
+}
+
+
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\ServiceAbstraction\IProductService.cs ====================
 
 using Shared;
@@ -2509,6 +3127,7 @@ namespace ServiceAbstraction
         public IProductService ProductService { get; }
         public IBasketService BasketService { get; }
         public IAuthenticationService AuthenticationService { get; }
+        public IOrderService OrderService { get; }
     }
 }
 
@@ -2524,6 +3143,7 @@ namespace ServiceAbstraction
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DomainLayer\DomainLayer.csproj" />
     <ProjectReference Include="..\Shared\Shared.csproj" />
   </ItemGroup>
 
@@ -2637,6 +3257,78 @@ namespace Shared.DTOs.IdentityDTOs
 }
 
 
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\OrderDTOs\DeliveryMethodDto.cs ====================
+
+namespace Shared.DTOs.OrderDTOs
+{
+    public class DeliveryMethodDto
+    {
+        public string ShortName { get; set; } = default!;
+        public string Description { get; set; } = default!;
+        public string DeliveryTime { get; set; } = default!;
+        public decimal Price { get; set; }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\OrderDTOs\OrderDTO.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Shared.DTOs.OrderDTOs
+{
+    public class OrderDTO
+    {
+        public string BasketId { get; set; } = default!;
+        public int DeliveryMethod { get; set; }
+        public AddressDTO Address { get; set; } = default!;
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\OrderDTOs\OrderItemDTO.cs ====================
+
+namespace Shared.DTOs.OrderDTOs
+{
+    public class OrderItemDTO
+    {
+        public string ProductName { get; set; } = default!;
+        public string PictureUrl { get; set; } = default!;
+        public decimal Price { get; set; }
+        public int Quantity { get; set; }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\OrderDTOs\OrderToReturnDTO.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Shared.DTOs.OrderDTOs
+{
+    public class OrderToReturnDTO
+    {
+        public Guid Id { get; set; }
+        public string UserEmail { get; set; } = default!;
+        public DateTimeOffset OrderDate { get; set; } = DateTimeOffset.Now;
+        public AddressDTO OrderAddress { get; set; } = default!;
+        public string DeliveryMethod { get; set; } = default!;
+        public string OrderStatus { get; set; } = default!;
+        public ICollection<OrderItemDTO> Items { get; set; } = [];
+        public decimal SubTotal { get; set; }
+        public decimal Total { get; set; }
+    }
+}
+
+
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Shared\DTOs\ProductModuleDTOs\BrandDTO.cs ====================
 
 using System;
@@ -2711,8 +3403,8 @@ namespace Shared.DTOs
         public string City { get; set; } = default!;
         public string Country { get; set; } = default!;
         public string Street { get; set; } = default!;
-        public string Fname { get; set; } = default!;
-        public string Lname { get; set; } = default!;
+        public string FirstName { get; set; } = default!;
+        public string LastName { get; set; } = default!;
     }
 }
 

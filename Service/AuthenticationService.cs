@@ -59,8 +59,8 @@ namespace Service
                 User.Address.Street = addressDTO.Street;
                 User.Address.City = addressDTO.City;
                 User.Address.Country = addressDTO.Country;
-                User.Address.Fname = addressDTO.Fname;
-                User.Address.Lname = addressDTO.Lname;
+                User.Address.Fname = addressDTO.FirstName;
+                User.Address.Lname = addressDTO.LastName;
             }
             else
             {
