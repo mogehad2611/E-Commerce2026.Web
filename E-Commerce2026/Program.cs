@@ -13,6 +13,8 @@ using Service;
 using Service.MappingProfiles;
 using ServiceAbstraction;
 using Shared.ErrorModels;
+using Swashbuckle.AspNetCore.SwaggerUI;
+using System.Text.Json;
 
 namespace ECommerce.Web
 {
@@ -64,7 +66,24 @@ namespace ECommerce.Web
                 // to expose the JSON [OpenAPI specification]
                 // via HTTP
 
-                app.UseSwaggerUI();
+                app.UseSwaggerUI(Options =>
+                {
+                    Options.ConfigObject = new ConfigObject()
+                    {
+                        DisplayRequestDuration = true
+                    };
+
+                    Options.DocumentTitle = "My E-Commerce API";
+
+                    Options.JsonSerializerOptions = new JsonSerializerOptions()
+                    {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                    };
+
+                    Options.DocExpansion(DocExpansion.None);
+                    Options.EnableFilter();
+                    Options.EnablePersistAuthorization();
+                });
                 // used to provide interactive swagger web page
                 // reads the swagger JSON to generate UI
             }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.OpenApi.Models;
 
 namespace E_Commerce2026.Extentions
 {
@@ -18,25 +19,25 @@ namespace E_Commerce2026.Extentions
 
             Services.AddSwaggerGen(options =>
             {
-                options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Name = "Authorization",
-                    Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+                    Type = SecuritySchemeType.ApiKey,
                     Scheme = "bearer",
                     BearerFormat = "JWT",
-                    In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                    In = ParameterLocation.Header,
                     Description = "Enter JWT Token"
                 });
 
                 options.AddSecurityRequirement(
-                    new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+                    new OpenApiSecurityRequirement
                     {
             {
-                new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                new OpenApiSecurityScheme
                 {
-                    Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                    Reference = new OpenApiReference
                     {
-                        Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                        Type = ReferenceType.SecurityScheme,
                         Id = "Bearer"
                     }
                 },
@@ -44,6 +45,7 @@ namespace E_Commerce2026.Extentions
             }
                     });
             });
+
             return Services;
         }
 

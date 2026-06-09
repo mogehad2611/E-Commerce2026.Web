@@ -15,7 +15,24 @@ namespace Service
             services.AddAutoMapper(cfg => { },
                 typeof(Service.AssemblyRef).Assembly);
 
-            services.AddScoped<IServiceManager, ServiceManager>();
+            services.AddScoped<IServiceManager, ServiceManagerWithFactoryDelegate>();
+
+            services.AddScoped<IProductService, ProductService>();
+            services.AddScoped<Func<IProductService>>(provider =>
+            () => provider.GetRequiredService<IProductService>());
+
+            services.AddScoped<IOrderService, OrderService>();
+            services.AddScoped<Func<IOrderService>>(provider =>
+            () => provider.GetRequiredService<IOrderService>());
+
+            services.AddScoped<IBasketService, BasketService>();
+            services.AddScoped<Func<IBasketService>>(provider =>
+            () => provider.GetRequiredService<IBasketService>());
+
+            services.AddScoped<IAuthenticationService, AuthenticationService>();
+            services.AddScoped<Func<IAuthenticationService>>(provider =>
+            () => provider.GetRequiredService<IAuthenticationService>());
+
 
             return services;
 
