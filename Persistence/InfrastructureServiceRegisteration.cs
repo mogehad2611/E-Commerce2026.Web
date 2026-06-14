@@ -30,6 +30,7 @@ namespace Persistence
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             services.AddScoped<IBasketRepository, BasketRepository>();
+            services.AddScoped<ICacheRepository, CacheRepository>();
 
             services.AddSingleton<IConnectionMultiplexer>( (_) =>
             {

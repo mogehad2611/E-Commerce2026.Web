@@ -7,11 +7,6 @@ using Service.Specifications;
 using ServiceAbstraction;
 using Shared.DTOs;
 using Shared.DTOs.OrderDTOs;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Service
 {
@@ -27,18 +22,22 @@ namespace Service
             List<OrderItem> orderItems = [];
             var ProductRepo = unitOfWork.GetRepository<Product, int>();
 
-            foreach(var item in Basket.Items)
+            foreach (var item in Basket.Items)
             {
-                var Product = ProductRepo.GetByIdAsync(item.Id)
+                var product = await ProductRepo.GetByIdAsync(item.Id)
                     ?? throw new ProductNotFoundException(item.Id);
 
-                var ProductItemOrdered =
-                    new ProductItemOrdered(Product.Result!.Id, Product.Result.PictureUrl, Product.Result.Name);
+                var productItemOrdered = new ProductItemOrdered(
+                    product.Id,
+                    product.PictureUrl,
+                    product.Name);
 
-                var OrderItem =
-                    new OrderItem(item.Quantity, Product.Result.Price, ProductItemOrdered);
+                var orderItem = new OrderItem(
+                    item.Quantity,
+                    product.Price,
+                    productItemOrdered);
 
-                orderItems.Add(OrderItem);
+                orderItems.Add(orderItem);
             }
 
             var DeliveryMethod =

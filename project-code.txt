@@ -20,6 +20,24 @@ namespace DomainLayer.Contracts
 }
 
 
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Contracts\ICacheRepository.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainLayer.Contracts
+{
+    public interface ICacheRepository
+    {
+        Task<string?> GetAsync(string CacheKey);
+        Task SetASync(string CacheKey, string CacheValue, TimeSpan TimeToLive);
+    }
+}
+
+
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\DomainLayer\Contracts\IDataSeeding.cs ====================
 
 using System;
@@ -662,6 +680,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.OpenApi.Models;
 
 namespace E_Commerce2026.Extentions
 {
@@ -677,25 +696,25 @@ namespace E_Commerce2026.Extentions
 
             Services.AddSwaggerGen(options =>
             {
-                options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Name = "Authorization",
-                    Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+                    Type = SecuritySchemeType.ApiKey,
                     Scheme = "bearer",
                     BearerFormat = "JWT",
-                    In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                    In = ParameterLocation.Header,
                     Description = "Enter JWT Token"
                 });
 
                 options.AddSecurityRequirement(
-                    new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+                    new OpenApiSecurityRequirement
                     {
             {
-                new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                new OpenApiSecurityScheme
                 {
-                    Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                    Reference = new OpenApiReference
                     {
-                        Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                        Type = ReferenceType.SecurityScheme,
                         Id = "Bearer"
                     }
                 },
@@ -703,6 +722,7 @@ namespace E_Commerce2026.Extentions
             }
                     });
             });
+
             return Services;
         }
 
@@ -908,6 +928,8 @@ using Service;
 using Service.MappingProfiles;
 using ServiceAbstraction;
 using Shared.ErrorModels;
+using Swashbuckle.AspNetCore.SwaggerUI;
+using System.Text.Json;
 
 namespace ECommerce.Web
 {
@@ -959,7 +981,24 @@ namespace ECommerce.Web
                 // to expose the JSON [OpenAPI specification]
                 // via HTTP
 
-                app.UseSwaggerUI();
+                app.UseSwaggerUI(Options =>
+                {
+                    Options.ConfigObject = new ConfigObject()
+                    {
+                        DisplayRequestDuration = true
+                    };
+
+                    Options.DocumentTitle = "My E-Commerce API";
+
+                    Options.JsonSerializerOptions = new JsonSerializerOptions()
+                    {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                    };
+
+                    Options.DocExpansion(DocExpansion.None);
+                    Options.EnableFilter();
+                    Options.EnablePersistAuthorization();
+                });
                 // used to provide interactive swagger web page
                 // reads the swagger JSON to generate UI
             }
@@ -1458,6 +1497,36 @@ namespace Persistence.Repositories
 }
 
 
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Repositories\CacheRepository.cs ====================
+
+using DomainLayer.Contracts;
+using StackExchange.Redis;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Persistence.Repositories
+{
+    public class CacheRepository(IConnectionMultiplexer connection) : ICacheRepository
+    {
+        private readonly IDatabase connection = connection.GetDatabase();
+
+        public async Task<string?> GetAsync(string CacheKey)
+        {
+            var cachevalue = await connection.StringGetAsync(CacheKey);
+            return cachevalue.IsNullOrEmpty ? null : cachevalue.ToString();
+        }
+
+        public async Task SetASync(string CacheKey, string CacheValue, TimeSpan TimeToLive)
+        {
+            await connection.StringSetAsync(CacheKey, CacheValue, TimeToLive);
+        }
+    }
+}
+
+
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Persistence\Repositories\GenericRepository.cs ====================
 
 using DomainLayer.Contracts;
@@ -1785,6 +1854,7 @@ namespace Persistence
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             services.AddScoped<IBasketRepository, BasketRepository>();
+            services.AddScoped<ICacheRepository, CacheRepository>();
 
             services.AddSingleton<IConnectionMultiplexer>( (_) =>
             {
@@ -1884,6 +1954,76 @@ namespace Persistence
                 Query = Query.Skip(specifications.Skip).Take(specifications.Take);
             }
             return Query;
+        }
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Presentation\Attibutes\CacheAttribute.cs ====================
+
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.DependencyInjection;
+using ServiceAbstraction;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Presentation.Attibutes
+{
+    internal class CacheAttribute(int DurationInSec=90) : ActionFilterAttribute
+    {
+        public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+        {
+            string CacheKey = CreateCacheKey(request: context.HttpContext.Request);
+
+            // Search For Value With cache Key
+            ICacheService cacheService =
+                context.HttpContext.RequestServices.GetRequiredService<ICacheService>();
+
+            var cacheValue = await cacheService.GetAsync(CacheKey);
+
+            // Return Value If Not Null
+            if (cacheValue is not null)
+            {
+                context.Result = new ContentResult()
+                {
+                    Content = cacheValue,
+                    ContentType = "application/json",
+                    StatusCode = StatusCodes.Status200OK
+                };
+
+                return;
+            }
+            var ExecutedContext = await next.Invoke();
+
+            // Set Value With Cache Key
+            if (ExecutedContext.Result is OkObjectResult result)
+            {
+                await cacheService.SetAsync(
+                     CacheKey,
+                     result.Value,
+                     TimeSpan.FromSeconds(value: DurationInSec)
+                );
+            }
+        }
+
+        private string CreateCacheKey(HttpRequest request)
+        {
+            // {{BaseUrl}}/api/Products?TypeId=20&BrandId=10
+            StringBuilder Key = new StringBuilder();
+
+            Key.Append(request.Path + '?');
+
+            foreach (var Item in request.Query.OrderBy(Q => Q.Key))
+            {
+                Key.Append($"{Item.Key}={Item.Value}&");
+            }
+
+            return Key.ToString();
         }
     }
 }
@@ -2086,6 +2226,7 @@ namespace Presentation.Controllers
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Presentation.Attibutes;
 using ServiceAbstraction;
 using Shared;
 using Shared.DTOs.ProductModuleDTOs;
@@ -2107,6 +2248,7 @@ namespace Presentation.Controllers
     {
         [Authorize(Roles ="Admin")]
         [HttpGet]
+        [Cache]
         public async Task<ActionResult<PaginatedResult<ProductDTO>>> GetAllProducts([FromQuery]ProductQueryParams queryParams)
         {
             var Products = await serviceManager.ProductService.GetAllProductsAsync(queryParams);
@@ -2556,7 +2698,24 @@ namespace Service
             services.AddAutoMapper(cfg => { },
                 typeof(Service.AssemblyRef).Assembly);
 
-            services.AddScoped<IServiceManager, ServiceManager>();
+            services.AddScoped<IServiceManager, ServiceManagerWithFactoryDelegate>();
+
+            services.AddScoped<IProductService, ProductService>();
+            services.AddScoped<Func<IProductService>>(provider =>
+            () => provider.GetRequiredService<IProductService>());
+
+            services.AddScoped<IOrderService, OrderService>();
+            services.AddScoped<Func<IOrderService>>(provider =>
+            () => provider.GetRequiredService<IOrderService>());
+
+            services.AddScoped<IBasketService, BasketService>();
+            services.AddScoped<Func<IBasketService>>(provider =>
+            () => provider.GetRequiredService<IBasketService>());
+
+            services.AddScoped<IAuthenticationService, AuthenticationService>();
+            services.AddScoped<Func<IAuthenticationService>>(provider =>
+            () => provider.GetRequiredService<IAuthenticationService>());
+
 
             return services;
 
@@ -2783,6 +2942,35 @@ namespace Service
 }
 
 
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\CacheService.cs ====================
+
+using DomainLayer.Contracts;
+using ServiceAbstraction;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
+
+namespace Service
+{
+    internal class CacheService(ICacheRepository cacheRepository) : ICacheService
+    {
+        public async Task<string?> GetAsync(string CacheKey)
+        {
+            return await cacheRepository.GetAsync(CacheKey);
+        }
+
+        public async Task SetAsync(string CacheKey, object CacheValue, TimeSpan TimeToLive)
+        {
+            var Value = JsonSerializer.Serialize(CacheValue);
+            await cacheRepository.SetASync(CacheKey, Value, TimeToLive);
+        }
+    }
+}
+
+
 ==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\OrderService.cs ====================
 
 using AutoMapper;
@@ -2794,11 +2982,6 @@ using Service.Specifications;
 using ServiceAbstraction;
 using Shared.DTOs;
 using Shared.DTOs.OrderDTOs;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Service
 {
@@ -2814,18 +2997,22 @@ namespace Service
             List<OrderItem> orderItems = [];
             var ProductRepo = unitOfWork.GetRepository<Product, int>();
 
-            foreach(var item in Basket.Items)
+            foreach (var item in Basket.Items)
             {
-                var Product = ProductRepo.GetByIdAsync(item.Id)
+                var product = await ProductRepo.GetByIdAsync(item.Id)
                     ?? throw new ProductNotFoundException(item.Id);
 
-                var ProductItemOrdered =
-                    new ProductItemOrdered(Product.Result!.Id, Product.Result.PictureUrl, Product.Result.Name);
+                var productItemOrdered = new ProductItemOrdered(
+                    product.Id,
+                    product.PictureUrl,
+                    product.Name);
 
-                var OrderItem =
-                    new OrderItem(item.Quantity, Product.Result.Price, ProductItemOrdered);
+                var orderItem = new OrderItem(
+                    item.Quantity,
+                    product.Price,
+                    productItemOrdered);
 
-                orderItems.Add(OrderItem);
+                orderItems.Add(orderItem);
             }
 
             var DeliveryMethod =
@@ -2994,7 +3181,7 @@ using System.Threading.Tasks;
 
 namespace Service
 {
-    public class ServiceManager(IUnitOfWork unitOfWork, IMapper mapper , IBasketRepository basketRepository , UserManager<AppUser> userManager , IConfiguration configuration) : IServiceManager
+    public class ServiceManager(IUnitOfWork unitOfWork, IMapper mapper , IBasketRepository basketRepository , UserManager<AppUser> userManager , IConfiguration configuration) 
     {
         // implement using lazy loading
         private readonly Lazy<IProductService> _productService
@@ -3013,6 +3200,35 @@ namespace Service
         public IAuthenticationService AuthenticationService => _authService.Value;
         public IBasketService BasketService => _basketService.Value;
         public IOrderService OrderService => orderService.Value;
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\Service\ServiceManagerWithFactoryDelegate.cs ====================
+
+using ServiceAbstraction;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Service
+{
+    public class ServiceManagerWithFactoryDelegate(
+        Func<IProductService> ProductFactory,
+        Func<IAuthenticationService> AuthenticationFactory,
+        Func<IBasketService> BasketFactory,
+        Func<IOrderService> OrderFactory
+        ) : IServiceManager
+    {
+        public IProductService ProductService => ProductFactory.Invoke();
+
+        public IBasketService BasketService => BasketFactory.Invoke();
+
+        public IAuthenticationService AuthenticationService => AuthenticationFactory.Invoke();
+
+        public IOrderService OrderService => OrderFactory.Invoke();
     }
 }
 
@@ -3057,6 +3273,24 @@ namespace ServiceAbstraction
         Task<BasketDTO> GetBasket(string key);
         Task<BasketDTO> CreateOrUpdateBasket(BasketDTO basket);
         Task<bool> DeleteBasket(string key);
+    }
+}
+
+
+==================== FILE: D:\E-Commerce2026\E-Commerce2026.Web\ServiceAbstraction\ICacheService.cs ====================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ServiceAbstraction
+{
+    public interface ICacheService
+    {
+        Task<string?> GetAsync(string CacheKey);
+        Task SetAsync(string CacheKey, object CacheValue, TimeSpan TimeToLive);
     }
 }
 
